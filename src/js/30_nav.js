@@ -36,7 +36,7 @@ const Home={deferred:null,
     const w=[];
     if(!NATIVE&&!window.isSecureContext)w.push('Le GPS ne fonctionne que si l\'appli est ouverte en <b>https</b>.');
     $('#homeWarn').innerHTML=w.map(x=>`<div class="warnbox">${x}</div>`).join('')+(IOS&&!STANDALONE&&!NATIVE?`<div class="ioshint">📲 Sur iPhone : touche <span class="shr">Partager ⬆︎</span> en bas de Safari, puis « Sur l'écran d'accueil ». Shadow CO s'ouvrira ensuite comme une appli, en plein écran.</div>`:'');
-    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]).filter(o=>o.status!=='deleted');
+    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]);
     let h='';
     if(act&&(act.status==='waiting'||act.status==='running'))h+=`<button class="primary" id="hResume">⏯ Reprendre ma course : ${esc(act.courseName)}</button>`;
     if(orgs.length)h+=`<section class="card"><h2>Courses organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>📡 ${esc(o.name)}</span><span class="muted">${Org.statusLabel(o.status)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
@@ -63,8 +63,8 @@ $('#gpxInput').onchange=async e=>{
 
 /* ---------------- Réglages ---------------- */
 const Settings={
-  open(){bindSettings();this.compassUI();show('settings')},
-  compassUI(){const v=Compass.get(),ask=Compass.needsPerm&&!Compass.active;$('#compassBtn').hidden=!ask;
+  open(){bindSettings();show('settings')},
+  compassUI(){if(!$('#compassState'))return;const v=Compass.get(),ask=Compass.needsPerm&&!Compass.active;$('#compassBtn').hidden=!ask;
     $('#compassState').textContent=v!=null?`✔ Boussole active : ${card(v)} (${Math.round(v)}°).`:ask?'Sur iPhone, touche « Autoriser la boussole ».':'Aucune boussole détectée pour l\'instant : la flèche de position suivra le sens de déplacement.'}
 };
 function bindSettings(){
@@ -77,8 +77,8 @@ function bindSettings(){
 function onSetting(k){
   if(k==='layer'||k==='contrast')allMaps.forEach(setMapStyle);
   if(k==='sim'){applySimUI();GPS.stop();toast(settings.sim?'Mode simulation activé':'Mode simulation désactivé : retour au vrai GPS');if(current==='run'||current==='create')GPS.start();if(current==='run')simPad($('#runSimPad'),Run.simExtra())}
-  if(current==='run'&&!Run.ended){if(k==='showMe'||k==='aide')Run.redraw();if(k==='voiceMode'&&settings.voiceMode!=='app')Voice.stop()}
+  if(current==='run'&&!Run.ended){if(k==='showMe'||k==='showTrack'||k==='aide')Run.redraw();if(k==='voiceMode'&&settings.voiceMode!=='app')Voice.stop()}
 }
-$('#compassBtn').onclick=async()=>{const ok=await Compass.enable();if(!ok)toast('Boussole refusée ou indisponible sur cet appareil',true);setTimeout(()=>Settings.compassUI(),800)};
+if($('#compassBtn'))$('#compassBtn').onclick=async()=>{const ok=await Compass.enable();if(!ok)toast('Boussole refusée ou indisponible sur cet appareil',true);setTimeout(()=>Settings.compassUI(),800)};
 $('#testBeep').onclick=async()=>{Snd.unlock();for(let i=0;i<12;i++){const k=1-i/11;Snd.tone(1500-k*900,0.08,{vol:0.5});await sleep(180+k*1100)}Snd.chime();vib([200,100,200])};
-Compass.onChange=()=>{if(current==='settings'||Sheet.open)Settings.compassUI();if(current==='run')Run.updateMe()};
+Compass.onChange=()=>{if(current==='run'&&!Run.ended&&Date.now()-(Run._meT||0)>400){Run._meT=Date.now();Run.updateMe()}};

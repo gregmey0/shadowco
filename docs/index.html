@@ -872,6 +872,17 @@ button.paused{background:var(--warn);color:#000;border-color:var(--warn)}
 .ptsin{flex-direction:row;align-items:center;gap:.3rem;font-weight:400;font-size:.9rem}
 .ptsin input{width:4.4rem;min-height:40px!important;padding:.2rem .4rem!important}
 input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radius:12px;border:2px solid var(--fg);background:#000;color:var(--fg);width:100%}
+.replay{padding:.5rem .7rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.replay[hidden]{display:none!important}
+.rp-ctl{display:flex;gap:.5rem;align-items:center}
+.rp-ctl button{flex:none;width:64px;min-height:52px;font-size:1.4rem}
+.rp-ctl input[type=range]{flex:1;height:44px;accent-color:var(--acc)}
+.rp-ctl select{flex:none;width:96px}
+#rpTime{font-weight:700;font-size:1.15rem;color:var(--acc);margin:0}
+.rplegend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
+.rplegend .chk{gap:.5rem}
+.rplegend .dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff}
+.rplegend .muted{margin-left:auto}
 </style>
 </head>
 <body>
@@ -954,11 +965,13 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
           <select data-s="layer"><option value="ign">Plan IGN</option><option value="osm">OpenStreetMap</option><option value="topo">OpenTopoMap (relief)</option><option value="photo">Photo aérienne IGN</option></select></label>
         <label>Contraste
           <select data-s="contrast"><option value="normal">Normal (couleurs)</option><option value="high">Fort (noir et blanc)</option><option value="invert">Inversé (fond noir)</option></select></label>
-        <label class="chk"><input type="checkbox" data-s="showMe"> Afficher ma position sur la carte (si l'organisateur l'autorise)</label>
+        <label class="chk"><input type="checkbox" data-s="showMe"> Course seul : afficher ma position pendant la course (sinon elle n'est visible que jusqu'au départ)</label>
+        <label class="chk"><input type="checkbox" data-s="showTrack"> … et laisser ma trace sur la carte</label>
+        <p class="hint">En course organisée, c'est l'organisateur qui décide de l'affichage de la position.</p>
       </section>
       <section class="card">
         <h2>Aides</h2>
-        <label class="chk"><input type="checkbox" data-s="beep"> Bips d'approche : de plus en plus rapides près d'un poste à trouver (si l'organisateur l'autorise)</label>
+        <label class="chk"><input type="checkbox" data-s="beep"> Bips d'approche : de plus en plus rapides près d'un poste à trouver (si l'organisateur autorise les aides)</label>
         <label>Les bips commencent à
           <select data-s="approachDist" data-num><option value="15">15 m</option><option value="20">20 m</option><option value="30">30 m</option><option value="50">50 m</option></select></label>
         <label class="chk"><input type="checkbox" data-s="aide"> Afficher la distance et la direction du poste le plus proche</label>
@@ -971,13 +984,6 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
         <label>Annonce vocale des postes validés
           <select data-s="voiceMode"><option value="app">Oui</option><option value="off">Non</option></select></label>
         <label class="chk"><input type="checkbox" data-s="vibrate"> Vibrations</label>
-      </section>
-      <section class="card">
-        <h2>Boussole</h2>
-        <p id="compassState">…</p>
-        <button type="button" id="compassBtn" hidden>🧭 Autoriser la boussole</button>
-        <label>Orientation de la flèche de position
-          <select data-s="headingRef"><option value="auto">Mixte : boussole à l'arrêt, sens de déplacement en marche</option><option value="phone">Boussole du téléphone</option><option value="walk">Sens de déplacement uniquement</option></select></label>
       </section>
       <section class="card no-run">
         <h2>Création de parcours</h2>
@@ -1057,8 +1063,10 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
     </section>
     <section class="card">
       <h2>Règles pour les coureurs</h2>
-      <label class="chk"><input type="checkbox" id="osShowMe" checked> Les coureurs voient leur position sur la carte</label>
-      <label class="chk"><input type="checkbox" id="osBeep" checked> Bips d'approche autorisés</label>
+      <label class="chk"><input type="checkbox" id="osShowMe"> Les coureurs voient leur position sur la carte pendant la course</label>
+      <label class="chk" id="osTrackL"><input type="checkbox" id="osTrack" checked> … et leur trace</label>
+      <p class="hint">Sans cette option, la position n'est affichée que jusqu'au départ, comme en vraie course d'orientation.</p>
+      <label class="chk"><input type="checkbox" id="osBeep" checked> Aides autorisées : bips d'approche et distance au poste</label>
       <label>Rayon de validation des postes<select id="osRadius"><option value="5">5 m</option><option value="8">8 m</option><option value="10">10 m</option><option value="15">15 m</option><option value="20">20 m</option></select></label>
     </section>
     <p class="hint">Les positions passent par un relais internet public, chiffrées avec le code de la course : seuls ceux qui ont le code peuvent les lire.</p>
@@ -1069,16 +1077,23 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
 <!-- ORGANISER : SUIVI -->
 <section id="org" class="screen">
   <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
-  <div class="orgbar">
+  <div class="orgbar" id="orgbarLive">
     <span id="orgStatus" class="tag"></span>
     <button type="button" id="orgQR">🔗 Code / QR</button>
     <button type="button" class="primary" id="orgLaunch" hidden>▶ Lancer le départ</button>
     <button type="button" id="orgRank">📊 Classement</button>
+    <button type="button" id="orgReplayBtn">⏯ Replay</button>
     <button type="button" class="danger" id="orgClose">🏁 Clore</button>
     <button type="button" id="orgMore" aria-label="Plus d'options">⋯</button>
   </div>
   <div class="orgmapwrap"><div id="orgMap" class="map"></div><div class="mapbtns"><button type="button" id="orgFit" aria-label="Voir tout le monde">🗺</button></div></div>
-  <main>
+  <div id="orgReplay" class="replay" hidden>
+    <div class="rp-ctl"><button type="button" class="primary" id="rpPlay" aria-label="Lecture / pause">▶</button><input type="range" id="rpSlider" min="0" max="1000" value="0" aria-label="Moment de la course"><select id="rpSpeed" aria-label="Vitesse"><option value="10">×10</option><option value="30" selected>×30</option><option value="60">×60</option><option value="120">×120</option></select></div>
+    <p id="rpTime" class="center"></p>
+    <ul id="rpLegend" class="rplegend"></ul>
+    <button type="button" id="rpExit">✖ Revenir au direct</button>
+  </div>
+  <main id="orgLive">
     <p id="orgCount"></p>
     <ul id="orgList" class="runners"></ul>
   </main>
@@ -1098,6 +1113,7 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
     <ul>
       <li>La carte montre tous les postes avec les symboles de course d'orientation ; le poste à chercher est entouré.</li>
       <li>Un poste se valide tout seul quand on passe dessus (carillon et vibration) ; les temps par poste sont enregistrés.</li>
+      <li>Ta position n'est affichée que jusqu'au départ. En course seul, tu peux la garder affichée (avec ta trace) dans les Réglages ; en course organisée, c'est l'organisateur qui décide.</li>
       <li>Aide facultative : bips d'approche de plus en plus rapides, distance et direction du poste le plus proche (Réglages).</li>
       <li>GPS capricieux ? « Valider » (appui long) prend le poste à chercher le plus proche, signalé « manuel » dans les résultats.</li>
     </ul>
@@ -1108,6 +1124,7 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
       <li>Le tableau de bord montre chaque coureur sur la carte (avec sa trace), ses postes, son temps, sa batterie, et signale qui est immobile ou sans nouvelles.</li>
       <li>Départ groupé : « Lancer le départ » démarre tous les chronos. « Clore » arrête la course. Le classement s'exporte en CSV pour un tableur.</li>
       <li>Tu peux quitter le tableau de bord et y revenir depuis l'accueil : rien n'est perdu.</li>
+      <li><b>⏯ Replay</b> : chaque coureur envoie sa trace complète ; le replay rejoue la course (vitesse ×10 à ×120, curseur de temps). Les traces restent sur ton appareil, même après avoir effacé la course du relais.</li>
     </ul>
     <h2>Bon à savoir</h2>
     <ul>
@@ -3446,7 +3463,7 @@ var qrcode = function() {
 </script>
 <script>'use strict';
 (function(){
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 const CAP=window.capacitorExports||null;
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications')}:{};
@@ -3465,9 +3482,10 @@ const store={
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
 const K={courses:'shco.courses.v1',settings:'shco.settings.v1',draft:'shco.draft.v1',results:'shco.results.v1',active:'shco.active.v1',orgs:'shco.orgs.v1',me:'shco.me.v1'};
-const DEFAULTS={voiceMode:'app',rate:1.1,beep:true,approachDist:30,radius:10,vibrate:true,layer:'ign',contrast:'normal',showMe:true,aide:false,headingRef:'auto',avgSeconds:5,recordTrack:true,sim:false,_v:1};
+const DEFAULTS={voiceMode:'app',rate:1.1,beep:true,approachDist:30,radius:10,vibrate:true,layer:'ign',contrast:'normal',showMe:false,showTrack:true,aide:false,headingRef:'auto',avgSeconds:5,recordTrack:true,sim:false,_v:2};
 let settings=Object.assign({},DEFAULTS,store.get(K.settings,{}));
 const saveSettings=()=>store.set(K.settings,settings);
+if((settings._v||1)<2){Object.assign(settings,{showMe:false,showTrack:true,_v:2});saveSettings()}
 let courses=store.get(K.courses,[]);
 function saveCourses(){if(!store.set(K.courses,courses))toast('Mémoire du navigateur indisponible : pense à exporter le GPX !',true)}
 let results=store.get(K.results,[]);
@@ -3827,7 +3845,7 @@ const Home={deferred:null,
     const w=[];
     if(!NATIVE&&!window.isSecureContext)w.push('Le GPS ne fonctionne que si l\'appli est ouverte en <b>https</b>.');
     $('#homeWarn').innerHTML=w.map(x=>`<div class="warnbox">${x}</div>`).join('')+(IOS&&!STANDALONE&&!NATIVE?`<div class="ioshint">📲 Sur iPhone : touche <span class="shr">Partager ⬆︎</span> en bas de Safari, puis « Sur l'écran d'accueil ». Shadow CO s'ouvrira ensuite comme une appli, en plein écran.</div>`:'');
-    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]).filter(o=>o.status!=='deleted');
+    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]);
     let h='';
     if(act&&(act.status==='waiting'||act.status==='running'))h+=`<button class="primary" id="hResume">⏯ Reprendre ma course : ${esc(act.courseName)}</button>`;
     if(orgs.length)h+=`<section class="card"><h2>Courses organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>📡 ${esc(o.name)}</span><span class="muted">${Org.statusLabel(o.status)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
@@ -3854,8 +3872,8 @@ $('#gpxInput').onchange=async e=>{
 
 /* ---------------- Réglages ---------------- */
 const Settings={
-  open(){bindSettings();this.compassUI();show('settings')},
-  compassUI(){const v=Compass.get(),ask=Compass.needsPerm&&!Compass.active;$('#compassBtn').hidden=!ask;
+  open(){bindSettings();show('settings')},
+  compassUI(){if(!$('#compassState'))return;const v=Compass.get(),ask=Compass.needsPerm&&!Compass.active;$('#compassBtn').hidden=!ask;
     $('#compassState').textContent=v!=null?`✔ Boussole active : ${card(v)} (${Math.round(v)}°).`:ask?'Sur iPhone, touche « Autoriser la boussole ».':'Aucune boussole détectée pour l\'instant : la flèche de position suivra le sens de déplacement.'}
 };
 function bindSettings(){
@@ -3868,11 +3886,11 @@ function bindSettings(){
 function onSetting(k){
   if(k==='layer'||k==='contrast')allMaps.forEach(setMapStyle);
   if(k==='sim'){applySimUI();GPS.stop();toast(settings.sim?'Mode simulation activé':'Mode simulation désactivé : retour au vrai GPS');if(current==='run'||current==='create')GPS.start();if(current==='run')simPad($('#runSimPad'),Run.simExtra())}
-  if(current==='run'&&!Run.ended){if(k==='showMe'||k==='aide')Run.redraw();if(k==='voiceMode'&&settings.voiceMode!=='app')Voice.stop()}
+  if(current==='run'&&!Run.ended){if(k==='showMe'||k==='showTrack'||k==='aide')Run.redraw();if(k==='voiceMode'&&settings.voiceMode!=='app')Voice.stop()}
 }
-$('#compassBtn').onclick=async()=>{const ok=await Compass.enable();if(!ok)toast('Boussole refusée ou indisponible sur cet appareil',true);setTimeout(()=>Settings.compassUI(),800)};
+if($('#compassBtn'))$('#compassBtn').onclick=async()=>{const ok=await Compass.enable();if(!ok)toast('Boussole refusée ou indisponible sur cet appareil',true);setTimeout(()=>Settings.compassUI(),800)};
 $('#testBeep').onclick=async()=>{Snd.unlock();for(let i=0;i<12;i++){const k=1-i/11;Snd.tone(1500-k*900,0.08,{vol:0.5});await sleep(180+k*1100)}Snd.chime();vib([200,100,200])};
-Compass.onChange=()=>{if(current==='settings'||Sheet.open)Settings.compassUI();if(current==='run')Run.updateMe()};
+Compass.onChange=()=>{if(current==='run'&&!Run.ended&&Date.now()-(Run._meT||0)>400){Run._meT=Date.now();Run.updateMe()}};
 
 /* ---------------- Création ---------------- */
 const Create={map:null,lay:null,trackLine:null,meM:null,accC:null,draft:null,unsub:null,capturing:false,follow:true,firstFix:true,
@@ -4092,7 +4110,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
       input:{value:store.get(K.me,''),placeholder:'Prénom'},buttons:[{label:'▶ Partir',value:true,primary:true},{label:'Annuler',value:false}]});
     if(!r.value)return;if(r.text)store.set(K.me,r.text);
     Snd.unlock();Voice.unlock();Compass.enable();
-    this.begin({kind:'solo',course:c,name:r.text,opts:{startType:'individual',showMe:true,beep:true,radius:settings.radius}});
+    this.begin({kind:'solo',course:c,name:r.text,opts:{startType:'individual',beep:true,radius:settings.radius}});
   },
   async checkActive(){
     const act=store.get(K.active,null);
@@ -4114,10 +4132,10 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     const c=a.course,st=a.resume||{};
     clearInterval(this.tickI);clearInterval(this.beepI);if(this.unsub)this.unsub();
     Object.assign(this,{kind:a.kind,c,pts:c.points,mode:c.mode||'ordered',timeLimit:(c.timeLimit||45)*60000,penalty:c.penalty==null?10:c.penalty,
-      opts:Object.assign({startType:'individual',showMe:true,beep:true,radius:settings.radius},a.opts||{}),link:a.race||null,name:a.name||'',
+      opts:Object.assign({startType:'individual',beep:true,radius:settings.radius},a.opts||{}),link:a.race||null,name:a.name||'',
       pid:st.pid||uid(),startAt:st.startAt||null,finishAt:st.finishAt||null,visited:st.visited||[],status:st.status||'waiting',track:st.track||[],
       id:st.id||uid(),date:st.date||new Date().toISOString(),race:st.race||(a.race?{code:a.race.code}:null),
-      ended:false,inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false});
+      ended:false,hidNoted:st.status==='running',inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false});
     if(this.link)this.link.onRace=r=>this.onRace(r);
     if(this.status==='waiting'&&this.opts.startType==='individual'&&!this.startPt()&&a.kind==='solo')this.go();
     show('run');
@@ -4193,7 +4211,8 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(!un&&this.finishPt())setTimeout(()=>{if(!this.ended)toast('Tous les postes sont trouvés : direction l\'arrivée 🏁')},1800);
     this.afterChange();
   },
-  afterChange(){this.inside={};this.save();this.publish(true);this.redraw();this.render()},
+  afterChange(){this.inside={};this.save();this.publish(true);this.redraw();this.render();
+    if(this.status==='running'&&!this.hidNoted&&!this.showMe()){this.hidNoted=true;setTimeout(()=>{if(!this.ended)toast(this.kind==='race'?'🙈 Course lancée : ta position n\'est plus affichée (choix de l\'organisateur).':'🙈 Course lancée : ta position est masquée (⚙ pour l\'afficher).')},2200)}},
   manualValidate(){
     const t=this.nearestTarget();if(this.status==='waiting'&&!this.startPt()){this.go();return}
     if(!t){toast('Pas de position GPS pour l\'instant.',true);return}
@@ -4244,7 +4263,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     this.publish();
   },
   beepCheck(){
-    if(this.ended||!settings.beep||this.opts.beep===false||current!=='run')return;
+    if(this.ended||!settings.beep||!this.aideOK()||current!=='run')return;
     const t=this.nearestTarget(),A=settings.approachDist,R=this.opts.radius||settings.radius;if(!t||t.d>A)return;
     const now=Date.now();if(now<this.nextBeep||Voice.busy())return;
     const k=Math.max(0,Math.min(1,(t.d-R)/Math.max(1,A-R)));this.nextBeep=now+170+k*1300;Snd.tone(1500-k*900,0.08,{vol:0.5});
@@ -4255,9 +4274,13 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(this.startPt())return spoken?'Rends-toi au départ, le chrono se lance en passant dessus.':'▲ Rends-toi au départ : le chrono se lance en passant dessus';
     return spoken?'Appuie sur Partir pour lancer ton chrono.':'Appuie sur « Je pars » pour lancer ton chrono';
   },
-  showMe(){return this.opts.showMe!==false&&settings.showMe},
+  /* position : toujours visible avant le départ (pour rejoindre le départ), ensuite selon l'organisateur (course organisée) ou les réglages (course seul) */
+  showMe(){if(this.status==='waiting')return true;return this.kind==='race'?this.opts.showMe===true:!!settings.showMe},
+  showTrack(){if(this.status!=='running'||!this.showMe())return false;return this.kind==='race'?this.opts.showTrack!==false:settings.showTrack!==false},
+  aideOK(){return this.opts.beep!==false},
   updateMe(){
     if(!this.map)return;const f=GPS.last;this.meLay.clearLayers();
+    if(this.showTrack()&&this.startAt){const tr=this.track.filter(q=>q[2]>=this.startAt).map(q=>[q[0],q[1]]);if(f)tr.push([f.lat,f.lon]);if(tr.length>1)L.polyline(tr,{color:'#7A1FA2',weight:4,opacity:.75,interactive:false}).addTo(this.meLay)}
     if(!f||!this.showMe())return;const hd=currentHeading(),ll=[f.lat,f.lon];
     L.circle(ll,{radius:f.acc,color:'#00B8D4',weight:2,fillOpacity:.08,interactive:false}).addTo(this.meLay);
     L.marker(ll,{icon:meIcon(hd?hd.h:null),interactive:false,zIndexOffset:2000}).addTo(this.meLay);
@@ -4270,7 +4293,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     this.updateMe();this.render();
   },
   fitCourse(force){const b=L.latLngBounds(this.pts.map(p=>[p.lat,p.lon]));if(b.isValid())this.map.fitBounds(b,{padding:[50,50],maxZoom:18,animate:!force})},
-  centerMe(){const f=GPS.last;if(!f){toast('Pas encore de position GPS.',true);return}if(!this.showMe()){toast('Position masquée pour cette course.',true);return}this.map.setView([f.lat,f.lon],Math.max(this.map.getZoom(),17))},
+  centerMe(){const f=GPS.last;if(!f){toast('Pas encore de position GPS.',true);return}if(!this.showMe()){toast(this.kind==='race'?'Position masquée par l\'organisateur pendant la course.':'Position masquée pendant la course (modifiable dans ⚙ Réglages).',true);return}this.map.setView([f.lat,f.lon],Math.max(this.map.getZoom(),17))},
   render(){
     if(current!=='run')return;
     const el=this.elapsed(),si=this.scoreInfo(),n=this.ctrls().length,done=this.visited.filter(v=>v.type==='control').length;
@@ -4291,7 +4314,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(this.status==='running'){
       if(this.mode==='ordered')s=T[0]?(T[0].type==='finish'?'Prochain : 🏁 arrivée':`Prochain : poste ${shortLabel(this.pts,this.pts.indexOf(T[0]))}`):'';
       else{const un=this.missing();s=un?`Reste ${un} poste${un>1?'s':''}`:(this.finishPt()?'Tous trouvés : 🏁 arrivée':'')}
-      if(settings.aide){const t=this.nearestTarget();if(t)s+=` · ${t.p.type==='finish'?'🏁':'n° '+shortLabel(this.pts,this.pts.indexOf(t.p))} à ${fmtDist(t.d)} ${cardS(bearing(GPS.last,t.p))}`}
+      if(settings.aide&&this.aideOK()){const t=this.nearestTarget();if(t)s+=` · ${t.p.type==='finish'?'🏁':'n° '+shortLabel(this.pts,this.pts.indexOf(t.p))} à ${fmtDist(t.d)} ${cardS(bearing(GPS.last,t.p))}`}
     }
     $('#runInfo').textContent=s;
   },
@@ -4302,6 +4325,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
       visited:this.visited.map(v=>({id:v.id,el:v.el,leg:v.leg,m:v.m})),score:si.pts,pen:si.pen,net:si.net,
       pos:f&&!f.sim?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:Math.round(f.acc),t:f.t}:f?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:3,t:f.t,sim:1}:null,
       bat:Battery.level,app:NATIVE?'android':'web',upd:now});
+    if(force||now-(this.lastTrk||0)>60000){this.lastTrk=now;const e=encTrack(this.track.slice(-3000));if(e)this.link.publishTrack(this.pid,this.name||'Coureur',e)}
   },
   saveSoon(){if(Date.now()-this.lastSave>20000)this.save()},
   save(){if(this.ended)return;this.lastSave=Date.now();
@@ -4319,7 +4343,7 @@ holdButton($('#runQuit'),1000,()=>Run.askQuit());
 $('#runGo').onclick=()=>Run.go();
 $('#runMe').onclick=()=>Run.centerMe();
 $('#runFit').onclick=()=>Run.fitCourse(false);
-$('#runOpts').onclick=()=>{Sheet.show('Réglages',$('#settingsBox'),()=>$('#settings main').appendChild($('#settingsBox')));bindSettings();Settings.compassUI()};
+$('#runOpts').onclick=()=>{Sheet.show('Réglages',$('#settingsBox'),()=>$('#settings main').appendChild($('#settingsBox')));bindSettings()};
 
 /* ---------------- Résultats ---------------- */
 const Results={cur:null,
@@ -4415,6 +4439,11 @@ class Mqtt{
   close(){this.closed=true;clearTimeout(this.rt);clearInterval(this.ka);try{this._send(new Uint8Array([0xE0,0]));this.ws&&this.ws.close()}catch(e){}}
 }
 
+/* Trace compacte : différences entières (1e-5 degré ≈ 1 m, secondes) */
+function encTrack(tr){if(!tr||!tr.length)return null;const t0=tr[0][2];let a0=0,b0=0,c0=0;const d=[];
+  for(const q of tr){const a=Math.round(q[0]*1e5),b=Math.round(q[1]*1e5),c=Math.round((q[2]-t0)/1000);d.push(a-a0,b-b0,c-c0);a0=a;b0=b;c0=c}return{t0,d}}
+function decTrack(e){const o=[];if(!e||!e.d)return o;let a=0,b=0,c=0;for(let i=0;i+2<e.d.length;i+=3){a+=e.d[i];b+=e.d[i+1];c+=e.d[i+2];o.push([a/1e5,b/1e5,e.t0+c*1000])}return o}
+
 /* Lien coureur ↔ course */
 const RaceLink={
   async connect(code,{silent}={}){
@@ -4422,6 +4451,7 @@ const RaceLink={
     const{key,tid}=await deriveRace(code),base='shco/v1/'+tid,m=new Mqtt(BROKERS[code[0]]);
     const link={code,key,base,m,race:null,connected:false,onRace:null,ownedByRun:true,
       publishState(st){seal(key,Object.assign({v:1,type:'p'},st)).then(b=>m.publish(base+'/p/'+st.pid,b,true))},
+      publishTrack(pid,name,e){seal(key,Object.assign({v:1,type:'t',pid,name},e)).then(b=>m.publish(base+'/t/'+pid,b,true))},
       close(){m.close()}};
     let waiter=null;
     m.onstate=c=>{link.connected=c;if(current==='run')Run.render()};
@@ -4458,7 +4488,8 @@ const Join={link:null,stream:null,
     this.link=link;
     const c=r.course;
     $('#jInfo').innerHTML=`<section class="card"><h2>${esc(r.name)}</h2><p>${MODES[c.mode].label}${c.mode==='score'?` · ${c.timeLimit} min`:''} · ${nControls(c.points)} postes</p>
-      <p class="hint">${r.opts.startType==='mass'?'Départ groupé donné par l\'organisateur':'Départ individuel'}${r.opts.showMe?'':' · position masquée sur la carte'}${r.opts.beep?'':' · sans bips d\'approche'} · validation à ${r.opts.radius} m${r.status==='started'?' · <b>course déjà lancée</b>':''}</p></section>`;
+      <p class="hint">${r.opts.startType==='mass'?'Départ groupé donné par l\'organisateur':'Départ individuel'}${r.opts.showMe?' · position visible pendant la course':' · position masquée après le départ'}${r.opts.beep?'':' · sans aides'} · validation à ${r.opts.radius} m${r.status==='started'?' · <b>course déjà lancée</b>':''}</p></section>`;
+    $('#jInfo').insertAdjacentHTML('beforeend','<p class="hint">En rejoignant, ta position et ta trace sont transmises à l\'organisateur pendant la course (chiffrées).</p>');
     $('#jConfirm').hidden=false;setTimeout(()=>$('#jName').focus(),50);
   },
   async join(){
@@ -4494,7 +4525,7 @@ const OrgSetup={course:null,
     $('#osMode').value=c.mode||'ordered';$('#osLimit').value=c.timeLimit||45;$('#osPen').value=c.penalty==null?10:c.penalty;
     $('#osRadius').value=String(settings.radius||10);this.sync();
   },
-  sync(){$('#osScore').hidden=$('#osMode').value!=='score';$('#osModeHelp').textContent=MODES[$('#osMode').value].help;
+  sync(){$('#osScore').hidden=$('#osMode').value!=='score';$('#osTrackL').hidden=!$('#osShowMe').checked;$('#osModeHelp').textContent=MODES[$('#osMode').value].help;
     const hasStart=this.course&&this.course.points.some(p=>p.type==='start');
     $('#osStartHelp').textContent=$('#osStart').value==='mass'?'Tu appuieras sur « Lancer le départ » : tous les chronos démarrent ensemble.':hasStart?'Chaque coureur lance son chrono en passant sur le poste de départ ▲.':'Pas de poste de départ : chaque coureur lance son chrono avec le bouton « Je pars ».'},
   async create(){
@@ -4508,45 +4539,57 @@ const OrgSetup={course:null,
     const o={code:newCode(broker),name:$('#osName').value.trim()||c.name,created:new Date().toISOString(),status:'open',startAt:null,
       course:{id:c.id,name:c.name,mode,timeLimit:Math.max(1,parseInt($('#osLimit').value,10)||45),penalty:Math.max(0,parseInt($('#osPen').value,10)||0),
         points:c.points.map(p=>({id:p.id,lat:p.lat,lon:p.lon,type:p.type,name:p.name,pts:p.pts}))},
-      opts:{startType:$('#osStart').value,showMe:$('#osShowMe').checked,beep:$('#osBeep').checked,radius:parseInt($('#osRadius').value,10)||10}};
+      opts:{startType:$('#osStart').value,showMe:$('#osShowMe').checked,showTrack:$('#osTrack').checked,beep:$('#osBeep').checked,radius:parseInt($('#osRadius').value,10)||10}};
     const all=store.get(K.orgs,[]);all.push(o);store.set(K.orgs,all.slice(-30));
     await Org.open(o);Org.showQR();
   }
 };
-['#osMode','#osStart'].forEach(s=>$(s).addEventListener('change',()=>OrgSetup.sync()));
+['#osMode','#osStart','#osShowMe'].forEach(s=>$(s).addEventListener('change',()=>OrgSetup.sync()));
 $('#osCreate').onclick=()=>OrgSetup.create();
 
 /* ---------------- Organiser : suivi en direct ---------------- */
 const PALETTE=['#E6194B','#3CB44B','#4363D8','#F58231','#911EB4','#42D4F4','#F032E6','#9A6324','#000075','#808000','#469990','#DC143C','#2E8B57','#8B008B','#FF4500','#1E90FF'];
-const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runners:{},trails:{},tickI:null,focus:null,
-  statusLabel(s){return{open:'inscriptions ouvertes',started:'en cours',closed:'close',deleted:'effacée'}[s]||s},
+const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runners:{},trails:{},tracks:{},tickI:null,focus:null,lastSave:0,
+  statusLabel(s){return{open:'inscriptions ouvertes',started:'en cours',closed:'close',deleted:'archivée'}[s]||s},
+  dataKey(){return'shco.orgdata.'+this.o.code},
+  saveData(){if(!this.o)return;this.lastSave=Date.now();const tr={};Object.keys(this.runners).forEach(pid=>{const e=encTrack(this.fullTrack(pid));if(e)tr[pid]=e});
+    if(!store.set(this.dataKey(),{runners:this.runners,tracks:tr,saved:Date.now()}))toast('Mémoire pleine : exporte les résultats.',true)},
+  saveSoon(){if(Date.now()-this.lastSave>15000)this.saveData()},
+  /* trace la plus complète : trace envoyée par le coureur + positions reçues en direct */
+  fullTrack(pid){const a=(this.tracks[pid]||[]).concat(this.trails[pid]||[]).sort((x,y)=>x[2]-y[2]),o=[];
+    for(const q of a){const l=o[o.length-1];if(!l||q[2]-l[2]>=1500)o.push(q)}return o},
   save(){const all=store.get(K.orgs,[]),i=all.findIndex(x=>x.code===this.o.code);if(i>=0)all[i]=this.o;else all.push(this.o);store.set(K.orgs,all)},
   resume(code){const o=store.get(K.orgs,[]).find(x=>x.code===code);if(o)this.open(o)},
   async open(o){
-    this.o=o;this.runners={};this.trails={};this.focus=null;show('org');
+    this.o=o;this.runners={};this.trails={};this.tracks={};this.focus=null;Replay.close(true);show('org');
+    const sd=store.get('shco.orgdata.'+o.code,null);
+    if(sd){this.runners=sd.runners||{};Object.entries(sd.tracks||{}).forEach(([pid,e])=>{this.tracks[pid]=decTrack(e)})}
     $('#orgTitle').textContent=o.name;
     if(!this.map){this.map=makeMap($('#orgMap'),'org');this.lay=L.layerGroup().addTo(this.map);this.runLay=L.layerGroup().addTo(this.map)}else setMapStyle(this.map);
     const b=drawCourse(this.lay,o.course,{mode:o.course.mode});
     setTimeout(()=>{this.map.invalidateSize();if(b)this.map.fitBounds(b,{padding:[30,30],maxZoom:18})},80);
     this.render();
+    if(o.status==='deleted'){$('#orgNet').textContent='🗄';$('#orgNet').title='Course archivée sur cet appareil';return}
     const{key,tid}=await deriveRace(o.code);this.key=key;this.base='shco/v1/'+tid;
     if(this.m)this.m.close();const m=this.m=new Mqtt(BROKERS[o.code[0]]);
     m.onstate=c=>{$('#orgNet').textContent=c?'📡':'📡✖';$('#orgNet').title=c?'Connecté au relais':'Relais injoignable, nouvel essai…';if(c)this.publishRace()};
     m.onMessage(async(topic,pl)=>{
-      if(!topic.startsWith(this.base+'/p/')||!pl.length)return;
+      if(!pl.length)return;
+      if(topic.startsWith(this.base+'/t/')){try{const t=await unseal(this.key,pl);if(t&&t.pid){this.tracks[t.pid]=decTrack(t);this.saveSoon()}}catch(e){}return}
+      if(!topic.startsWith(this.base+'/p/'))return;
       try{const st=await unseal(this.key,pl);if(st&&st.pid)this.onRunner(st)}catch(e){}
     });
-    m.subscribe(this.base+'/p/+');m.connect();
+    m.subscribe(this.base+'/p/+');m.subscribe(this.base+'/t/+');m.connect();
     clearInterval(this.tickI);this.tickI=setInterval(()=>{if(current==='org')this.render()},1000);
   },
-  leave(){clearInterval(this.tickI);if(this.m){this.m.close();this.m=null}},
+  leave(){Replay.close(true);clearInterval(this.tickI);if(this.o&&Object.keys(this.runners).length)this.saveData();if(this.m){this.m.close();this.m=null}},
   raceMsg(){const o=this.o;return{v:1,type:'race',name:o.name,course:{mode:o.course.mode,timeLimit:o.course.timeLimit,penalty:o.course.penalty,points:o.course.points},opts:o.opts,status:o.status,startAt:o.startAt,created:o.created}},
   async publishRace(){if(!this.m||!this.key||this.o.status==='deleted')return;this.m.publish(this.base+'/race',await seal(this.key,this.raceMsg()),true)},
   onRunner(st){
     const prev=this.runners[st.pid];if(prev&&prev.upd>st.upd)return;
     this.runners[st.pid]=st;
     if(st.pos){const tr=this.trails[st.pid]||(this.trails[st.pid]=[]),l=tr[tr.length-1];if(!l||l[2]!==st.pos.t){tr.push([st.pos.lat,st.pos.lon,st.pos.t]);if(tr.length>400)tr.shift()}}
-    if(current==='org')this.render();
+    this.saveSoon();if(current==='org')this.render();
   },
   color(pid){let h=0;for(const ch of pid)h=(h*31+ch.charCodeAt(0))>>>0;return PALETTE[h%PALETTE.length]},
   ptById(id){return this.o.course.points.find(p=>p.id===id)},
@@ -4573,9 +4616,9 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     if(st.status==='finished')return'🏁 arrivé';return'🏃 en course';
   },
   render(){
-    const o=this.o;if(!o)return;
+    const o=this.o;if(!o||Replay.on)return;
     $('#orgStatus').textContent=this.statusLabel(o.status);$('#orgStatus').className='tag st-'+o.status;
-    $('#orgLaunch').hidden=!(o.opts.startType==='mass'&&o.status==='open');$('#orgClose').hidden=o.status==='closed';
+    $('#orgLaunch').hidden=!(o.opts.startType==='mass'&&o.status==='open');$('#orgClose').hidden=o.status==='closed'||o.status==='deleted';$('#orgQR').hidden=o.status==='deleted';
     const sc=o.course.mode==='score',rk=this.ranking(),now=Date.now();
     const cnt={running:0,finished:0,waiting:0};rk.forEach(r=>{if(cnt[r.st.status]!=null)cnt[r.st.status]++});
     const raceEl=o.startAt?now-o.startAt:null;
@@ -4590,7 +4633,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
   drawRunners(){
     this.runLay.clearLayers();const now=Date.now();
     Object.values(this.runners).forEach(st=>{
-      if(!st.pos)return;const col=this.color(st.pid),i=this.info(st),tr=this.trails[st.pid]||[];
+      if(!st.pos)return;const col=this.color(st.pid),i=this.info(st),tr=this.fullTrack(st.pid);
       if(tr.length>1)L.polyline(tr.map(q=>[q[0],q[1]]),{color:col,weight:3,opacity:.6,interactive:false}).addTo(this.runLay);
       const ini=st.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
       L.marker([st.pos.lat,st.pos.lon],{icon:L.divIcon({className:'rmk'+(i.stale?' stale':'')+(i.immobile?' alert':'')+(this.focus===st.pid?' sel':''),html:`<span style="background:${col}">${esc(ini)}</span><em>${esc(st.name)}</em>`,iconSize:[34,34],iconAnchor:[17,17]}),zIndexOffset:this.focus===st.pid?3000:1000})
@@ -4648,13 +4691,17 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     saveFile(slug('resultats_'+this.o.name)+'.csv','﻿'+[head.join(';'),...lines].join('\n'),'text/csv');
   },
   async more(){
-    const v=await modal({title:'Course : '+this.o.name,body:`<p class="hint">Code ${fmtCode(this.o.code)} · ${this.statusLabel(this.o.status)}</p>`,buttons:[{label:'⬇ Résultats CSV (tableur)',value:'csv'},{label:'🧹 Effacer la course du relais',value:'purge',danger:true},{label:'Fermer',value:null,primary:true}]});
+    const del=this.o.status==='deleted';
+    const v=await modal({title:'Course : '+this.o.name,body:`<p class="hint">Code ${fmtCode(this.o.code)} · ${this.statusLabel(this.o.status)}</p>`,buttons:[{label:'⬇ Résultats CSV (tableur)',value:'csv'},del?{label:'🗑 Supprimer de cet appareil (résultats et replay)',value:'local',danger:true}:{label:'🧹 Effacer la course du relais',value:'purge',danger:true},{label:'Fermer',value:null,primary:true}]});
     if(v==='csv')this.exportCSV();
+    if(v==='local'){const ok=await modal({title:'Supprimer cette course de l\'appareil ?',body:'<p>Les résultats et le replay seront perdus. Exporte le CSV avant si besoin.</p>',buttons:[{label:'🗑 Supprimer',value:true,danger:true},{label:'Annuler',value:false}]});
+      if(ok){store.del(this.dataKey());store.set(K.orgs,store.get(K.orgs,[]).filter(x=>x.code!==this.o.code));this.o=null;toast('Course supprimée de l\'appareil');show('home')}return}
     if(v==='purge'){
       const ok=await modal({title:'Effacer la course du relais ?',body:'<p>Les coureurs ne pourront plus la rejoindre et leurs données sont retirées du relais. Exporte les résultats avant.</p>',buttons:[{label:'🧹 Effacer',value:true,danger:true},{label:'Annuler',value:false}]});
       if(!ok)return;const e=new Uint8Array(0);
-      Object.keys(this.runners).forEach(pid=>this.m.publish(this.base+'/p/'+pid,e,true));this.m.publish(this.base+'/race',e,true);
-      this.o.status='deleted';this.save();toast('Course effacée du relais');setTimeout(()=>show('home'),800);
+      this.saveData();
+      Object.keys(this.runners).forEach(pid=>{this.m.publish(this.base+'/p/'+pid,e,true);this.m.publish(this.base+'/t/'+pid,e,true)});this.m.publish(this.base+'/race',e,true);
+      this.o.status='deleted';this.save();toast('Course effacée du relais : résultats et replay restent sur cet appareil');setTimeout(()=>show('home'),900);
     }
   }
 };
@@ -4665,6 +4712,54 @@ $('#orgQR').onclick=()=>Org.showQR();
 $('#orgRank').onclick=()=>Org.showRanking();
 $('#orgMore').onclick=()=>Org.more();
 $('#orgFit').onclick=()=>{const b=L.latLngBounds(Org.o.course.points.map(p=>[p.lat,p.lon]));Object.values(Org.runners).forEach(r=>{if(r.pos)b.extend([r.pos.lat,r.pos.lon])});if(b.isValid())Org.map.fitBounds(b,{padding:[30,30],maxZoom:18})};
+
+/* ---------------- Replay de la course ---------------- */
+const Replay={on:false,T:0,t0:0,t1:0,playing:false,lay:null,data:[],hidden:new Set(),timer:null,
+  open(){
+    const o=Org.o;if(!o)return;
+    const data=Object.values(Org.runners).map(st=>({st,tr:Org.fullTrack(st.pid),col:Org.color(st.pid)})).filter(d=>d.tr.length>1);
+    if(!data.length){toast('Pas encore de trajets à rejouer : les traces arrivent pendant la course.',true);return}
+    let t0=Infinity,t1=0;data.forEach(d=>{t0=Math.min(t0,d.tr[0][2]);t1=Math.max(t1,d.tr[d.tr.length-1][2])});
+    if(o.startAt&&o.startAt-30000>t0&&o.startAt<t1)t0=o.startAt-30000;
+    Object.assign(this,{data,t0,t1,T:t0,on:true,playing:false});this.hidden=new Set();
+    if(!this.lay)this.lay=L.layerGroup().addTo(Org.map);Org.runLay.clearLayers();
+    $('#orgReplay').hidden=false;$('#orgLive').hidden=true;$('#orgbarLive').hidden=true;
+    this.legend();this.draw();
+    const b=L.latLngBounds([]);data.forEach(d=>d.tr.forEach(q=>b.extend([q[0],q[1]])));o.course.points.forEach(p=>b.extend([p.lat,p.lon]));
+    if(b.isValid())Org.map.fitBounds(b,{padding:[30,30],maxZoom:18});
+  },
+  close(silent){if(!this.on)return;this.pause();this.on=false;if(this.lay)this.lay.clearLayers();$('#orgReplay').hidden=true;$('#orgLive').hidden=false;$('#orgbarLive').hidden=false;if(!silent)Org.render()},
+  play(){if(this.T>=this.t1)this.T=this.t0;this.playing=true;$('#rpPlay').textContent='⏸';clearInterval(this.timer);
+    this.timer=setInterval(()=>{this.T=Math.min(this.t1,this.T+100*this.speed());this.draw();if(this.T>=this.t1)this.pause()},100)},
+  pause(){this.playing=false;clearInterval(this.timer);const b=$('#rpPlay');if(b)b.textContent='▶'},
+  speed(){return parseFloat($('#rpSpeed').value)||30},
+  at(tr,T){let lo=0,hi=tr.length-1;if(T<tr[0][2])return null;while(lo<hi){const mid=(lo+hi+1)>>1;if(tr[mid][2]<=T)lo=mid;else hi=mid-1}
+    const a=tr[lo],b=tr[lo+1];if(!b||b[2]-a[2]>120000)return{i:lo,ll:[a[0],a[1]]};const k=(T-a[2])/(b[2]-a[2]);return{i:lo,ll:[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k]}},
+  draw(){
+    if(!this.on)return;this.lay.clearLayers();const o=Org.o,T=this.T;
+    this.data.forEach(d=>{
+      const n=(d.st.visited||[]).filter(v=>{const p=Org.ptById(v.id);return p&&p.type==='control'&&d.st.startAt&&d.st.startAt+v.el<=T}).length;
+      const c=document.getElementById('rpc-'+d.st.pid);if(c)c.textContent=n+'/'+o.course.points.filter(p=>p.type==='control').length;
+      if(this.hidden.has(d.st.pid))return;const p=this.at(d.tr,T);if(!p)return;
+      const tr=d.tr.slice(0,p.i+1).map(q=>[q[0],q[1]]);tr.push(p.ll);
+      if(tr.length>1)L.polyline(tr,{color:d.col,weight:4,opacity:.8,interactive:false}).addTo(this.lay);
+      const ini=d.st.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      L.marker(p.ll,{icon:L.divIcon({className:'rmk',html:`<span style="background:${d.col}">${esc(ini)}</span><em>${esc(d.st.name)}</em>`,iconSize:[34,34],iconAnchor:[17,17]}),interactive:false,zIndexOffset:1000}).addTo(this.lay);
+    });
+    const ref=o.startAt||this.t0,el=T-ref;
+    $('#rpTime').textContent=`${el<0?'avant le départ −'+fmtTime(-el):'⏱ '+fmtTime(el)} · ${new Date(T).toLocaleTimeString('fr-FR')}`;
+    $('#rpSlider').value=String(Math.round((T-this.t0)/Math.max(1,this.t1-this.t0)*1000));
+  },
+  legend(){
+    const n=Org.o.course.points.filter(p=>p.type==='control').length;
+    $('#rpLegend').innerHTML=this.data.map(d=>`<li><label class="chk"><input type="checkbox" data-rp="${d.st.pid}" checked><span class="dot" style="background:${d.col}"></span>${esc(d.st.name)}<span class="muted" id="rpc-${d.st.pid}">0/${n}</span></label></li>`).join('');
+  }
+};
+$('#orgReplayBtn').onclick=()=>Replay.open();
+$('#rpPlay').onclick=()=>{if(Replay.playing)Replay.pause();else Replay.play()};
+$('#rpExit').onclick=()=>Replay.close();
+$('#rpSlider').addEventListener('input',e=>{Replay.T=Replay.t0+(Replay.t1-Replay.t0)*(+e.target.value/1000);Replay.draw()});
+$('#rpLegend').addEventListener('change',e=>{const c=e.target.closest('[data-rp]');if(!c)return;if(c.checked)Replay.hidden.delete(c.dataset.rp);else Replay.hidden.add(c.dataset.rp);Replay.draw()});
 
 /* ---------------- Démarrage ---------------- */
 Voice.init();applySimUI();Home.render();
@@ -4687,7 +4782,7 @@ window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)})
     if(v){Create.draft=dr;Create.open()}
   }
 })();
-window.ShadowCO={GPS,Run,Org,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
+window.ShadowCO={GPS,Run,Org,Replay,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
 
 })();</script>
 </body>

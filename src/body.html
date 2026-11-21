@@ -77,11 +77,13 @@
           <select data-s="layer"><option value="ign">Plan IGN</option><option value="osm">OpenStreetMap</option><option value="topo">OpenTopoMap (relief)</option><option value="photo">Photo aérienne IGN</option></select></label>
         <label>Contraste
           <select data-s="contrast"><option value="normal">Normal (couleurs)</option><option value="high">Fort (noir et blanc)</option><option value="invert">Inversé (fond noir)</option></select></label>
-        <label class="chk"><input type="checkbox" data-s="showMe"> Afficher ma position sur la carte (si l'organisateur l'autorise)</label>
+        <label class="chk"><input type="checkbox" data-s="showMe"> Course seul : afficher ma position pendant la course (sinon elle n'est visible que jusqu'au départ)</label>
+        <label class="chk"><input type="checkbox" data-s="showTrack"> … et laisser ma trace sur la carte</label>
+        <p class="hint">En course organisée, c'est l'organisateur qui décide de l'affichage de la position.</p>
       </section>
       <section class="card">
         <h2>Aides</h2>
-        <label class="chk"><input type="checkbox" data-s="beep"> Bips d'approche : de plus en plus rapides près d'un poste à trouver (si l'organisateur l'autorise)</label>
+        <label class="chk"><input type="checkbox" data-s="beep"> Bips d'approche : de plus en plus rapides près d'un poste à trouver (si l'organisateur autorise les aides)</label>
         <label>Les bips commencent à
           <select data-s="approachDist" data-num><option value="15">15 m</option><option value="20">20 m</option><option value="30">30 m</option><option value="50">50 m</option></select></label>
         <label class="chk"><input type="checkbox" data-s="aide"> Afficher la distance et la direction du poste le plus proche</label>
@@ -94,13 +96,6 @@
         <label>Annonce vocale des postes validés
           <select data-s="voiceMode"><option value="app">Oui</option><option value="off">Non</option></select></label>
         <label class="chk"><input type="checkbox" data-s="vibrate"> Vibrations</label>
-      </section>
-      <section class="card">
-        <h2>Boussole</h2>
-        <p id="compassState">…</p>
-        <button type="button" id="compassBtn" hidden>🧭 Autoriser la boussole</button>
-        <label>Orientation de la flèche de position
-          <select data-s="headingRef"><option value="auto">Mixte : boussole à l'arrêt, sens de déplacement en marche</option><option value="phone">Boussole du téléphone</option><option value="walk">Sens de déplacement uniquement</option></select></label>
       </section>
       <section class="card no-run">
         <h2>Création de parcours</h2>
@@ -180,8 +175,10 @@
     </section>
     <section class="card">
       <h2>Règles pour les coureurs</h2>
-      <label class="chk"><input type="checkbox" id="osShowMe" checked> Les coureurs voient leur position sur la carte</label>
-      <label class="chk"><input type="checkbox" id="osBeep" checked> Bips d'approche autorisés</label>
+      <label class="chk"><input type="checkbox" id="osShowMe"> Les coureurs voient leur position sur la carte pendant la course</label>
+      <label class="chk" id="osTrackL"><input type="checkbox" id="osTrack" checked> … et leur trace</label>
+      <p class="hint">Sans cette option, la position n'est affichée que jusqu'au départ, comme en vraie course d'orientation.</p>
+      <label class="chk"><input type="checkbox" id="osBeep" checked> Aides autorisées : bips d'approche et distance au poste</label>
       <label>Rayon de validation des postes<select id="osRadius"><option value="5">5 m</option><option value="8">8 m</option><option value="10">10 m</option><option value="15">15 m</option><option value="20">20 m</option></select></label>
     </section>
     <p class="hint">Les positions passent par un relais internet public, chiffrées avec le code de la course : seuls ceux qui ont le code peuvent les lire.</p>
@@ -192,16 +189,23 @@
 <!-- ORGANISER : SUIVI -->
 <section id="org" class="screen">
   <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
-  <div class="orgbar">
+  <div class="orgbar" id="orgbarLive">
     <span id="orgStatus" class="tag"></span>
     <button type="button" id="orgQR">🔗 Code / QR</button>
     <button type="button" class="primary" id="orgLaunch" hidden>▶ Lancer le départ</button>
     <button type="button" id="orgRank">📊 Classement</button>
+    <button type="button" id="orgReplayBtn">⏯ Replay</button>
     <button type="button" class="danger" id="orgClose">🏁 Clore</button>
     <button type="button" id="orgMore" aria-label="Plus d'options">⋯</button>
   </div>
   <div class="orgmapwrap"><div id="orgMap" class="map"></div><div class="mapbtns"><button type="button" id="orgFit" aria-label="Voir tout le monde">🗺</button></div></div>
-  <main>
+  <div id="orgReplay" class="replay" hidden>
+    <div class="rp-ctl"><button type="button" class="primary" id="rpPlay" aria-label="Lecture / pause">▶</button><input type="range" id="rpSlider" min="0" max="1000" value="0" aria-label="Moment de la course"><select id="rpSpeed" aria-label="Vitesse"><option value="10">×10</option><option value="30" selected>×30</option><option value="60">×60</option><option value="120">×120</option></select></div>
+    <p id="rpTime" class="center"></p>
+    <ul id="rpLegend" class="rplegend"></ul>
+    <button type="button" id="rpExit">✖ Revenir au direct</button>
+  </div>
+  <main id="orgLive">
     <p id="orgCount"></p>
     <ul id="orgList" class="runners"></ul>
   </main>
@@ -221,6 +225,7 @@
     <ul>
       <li>La carte montre tous les postes avec les symboles de course d'orientation ; le poste à chercher est entouré.</li>
       <li>Un poste se valide tout seul quand on passe dessus (carillon et vibration) ; les temps par poste sont enregistrés.</li>
+      <li>Ta position n'est affichée que jusqu'au départ. En course seul, tu peux la garder affichée (avec ta trace) dans les Réglages ; en course organisée, c'est l'organisateur qui décide.</li>
       <li>Aide facultative : bips d'approche de plus en plus rapides, distance et direction du poste le plus proche (Réglages).</li>
       <li>GPS capricieux ? « Valider » (appui long) prend le poste à chercher le plus proche, signalé « manuel » dans les résultats.</li>
     </ul>
@@ -231,6 +236,7 @@
       <li>Le tableau de bord montre chaque coureur sur la carte (avec sa trace), ses postes, son temps, sa batterie, et signale qui est immobile ou sans nouvelles.</li>
       <li>Départ groupé : « Lancer le départ » démarre tous les chronos. « Clore » arrête la course. Le classement s'exporte en CSV pour un tableur.</li>
       <li>Tu peux quitter le tableau de bord et y revenir depuis l'accueil : rien n'est perdu.</li>
+      <li><b>⏯ Replay</b> : chaque coureur envoie sa trace complète ; le replay rejoue la course (vitesse ×10 à ×120, curseur de temps). Les traces restent sur ton appareil, même après avoir effacé la course du relais.</li>
     </ul>
     <h2>Bon à savoir</h2>
     <ul>

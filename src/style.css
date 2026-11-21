@@ -194,3 +194,14 @@ button.paused{background:var(--warn);color:#000;border-color:var(--warn)}
 .ptsin{flex-direction:row;align-items:center;gap:.3rem;font-weight:400;font-size:.9rem}
 .ptsin input{width:4.4rem;min-height:40px!important;padding:.2rem .4rem!important}
 input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radius:12px;border:2px solid var(--fg);background:#000;color:var(--fg);width:100%}
+.replay{padding:.5rem .7rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.replay[hidden]{display:none!important}
+.rp-ctl{display:flex;gap:.5rem;align-items:center}
+.rp-ctl button{flex:none;width:64px;min-height:52px;font-size:1.4rem}
+.rp-ctl input[type=range]{flex:1;height:44px;accent-color:var(--acc)}
+.rp-ctl select{flex:none;width:96px}
+#rpTime{font-weight:700;font-size:1.15rem;color:var(--acc);margin:0}
+.rplegend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
+.rplegend .chk{gap:.5rem}
+.rplegend .dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff}
+.rplegend .muted{margin-left:auto}

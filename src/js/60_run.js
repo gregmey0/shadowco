@@ -16,7 +16,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
       input:{value:store.get(K.me,''),placeholder:'Prénom'},buttons:[{label:'▶ Partir',value:true,primary:true},{label:'Annuler',value:false}]});
     if(!r.value)return;if(r.text)store.set(K.me,r.text);
     Snd.unlock();Voice.unlock();Compass.enable();
-    this.begin({kind:'solo',course:c,name:r.text,opts:{startType:'individual',showMe:true,beep:true,radius:settings.radius}});
+    this.begin({kind:'solo',course:c,name:r.text,opts:{startType:'individual',beep:true,radius:settings.radius}});
   },
   async checkActive(){
     const act=store.get(K.active,null);
@@ -38,10 +38,10 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     const c=a.course,st=a.resume||{};
     clearInterval(this.tickI);clearInterval(this.beepI);if(this.unsub)this.unsub();
     Object.assign(this,{kind:a.kind,c,pts:c.points,mode:c.mode||'ordered',timeLimit:(c.timeLimit||45)*60000,penalty:c.penalty==null?10:c.penalty,
-      opts:Object.assign({startType:'individual',showMe:true,beep:true,radius:settings.radius},a.opts||{}),link:a.race||null,name:a.name||'',
+      opts:Object.assign({startType:'individual',beep:true,radius:settings.radius},a.opts||{}),link:a.race||null,name:a.name||'',
       pid:st.pid||uid(),startAt:st.startAt||null,finishAt:st.finishAt||null,visited:st.visited||[],status:st.status||'waiting',track:st.track||[],
       id:st.id||uid(),date:st.date||new Date().toISOString(),race:st.race||(a.race?{code:a.race.code}:null),
-      ended:false,inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false});
+      ended:false,hidNoted:st.status==='running',inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false});
     if(this.link)this.link.onRace=r=>this.onRace(r);
     if(this.status==='waiting'&&this.opts.startType==='individual'&&!this.startPt()&&a.kind==='solo')this.go();
     show('run');
@@ -117,7 +117,8 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(!un&&this.finishPt())setTimeout(()=>{if(!this.ended)toast('Tous les postes sont trouvés : direction l\'arrivée 🏁')},1800);
     this.afterChange();
   },
-  afterChange(){this.inside={};this.save();this.publish(true);this.redraw();this.render()},
+  afterChange(){this.inside={};this.save();this.publish(true);this.redraw();this.render();
+    if(this.status==='running'&&!this.hidNoted&&!this.showMe()){this.hidNoted=true;setTimeout(()=>{if(!this.ended)toast(this.kind==='race'?'🙈 Course lancée : ta position n\'est plus affichée (choix de l\'organisateur).':'🙈 Course lancée : ta position est masquée (⚙ pour l\'afficher).')},2200)}},
   manualValidate(){
     const t=this.nearestTarget();if(this.status==='waiting'&&!this.startPt()){this.go();return}
     if(!t){toast('Pas de position GPS pour l\'instant.',true);return}
@@ -168,7 +169,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     this.publish();
   },
   beepCheck(){
-    if(this.ended||!settings.beep||this.opts.beep===false||current!=='run')return;
+    if(this.ended||!settings.beep||!this.aideOK()||current!=='run')return;
     const t=this.nearestTarget(),A=settings.approachDist,R=this.opts.radius||settings.radius;if(!t||t.d>A)return;
     const now=Date.now();if(now<this.nextBeep||Voice.busy())return;
     const k=Math.max(0,Math.min(1,(t.d-R)/Math.max(1,A-R)));this.nextBeep=now+170+k*1300;Snd.tone(1500-k*900,0.08,{vol:0.5});
@@ -179,9 +180,13 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(this.startPt())return spoken?'Rends-toi au départ, le chrono se lance en passant dessus.':'▲ Rends-toi au départ : le chrono se lance en passant dessus';
     return spoken?'Appuie sur Partir pour lancer ton chrono.':'Appuie sur « Je pars » pour lancer ton chrono';
   },
-  showMe(){return this.opts.showMe!==false&&settings.showMe},
+  /* position : toujours visible avant le départ (pour rejoindre le départ), ensuite selon l'organisateur (course organisée) ou les réglages (course seul) */
+  showMe(){if(this.status==='waiting')return true;return this.kind==='race'?this.opts.showMe===true:!!settings.showMe},
+  showTrack(){if(this.status!=='running'||!this.showMe())return false;return this.kind==='race'?this.opts.showTrack!==false:settings.showTrack!==false},
+  aideOK(){return this.opts.beep!==false},
   updateMe(){
     if(!this.map)return;const f=GPS.last;this.meLay.clearLayers();
+    if(this.showTrack()&&this.startAt){const tr=this.track.filter(q=>q[2]>=this.startAt).map(q=>[q[0],q[1]]);if(f)tr.push([f.lat,f.lon]);if(tr.length>1)L.polyline(tr,{color:'#7A1FA2',weight:4,opacity:.75,interactive:false}).addTo(this.meLay)}
     if(!f||!this.showMe())return;const hd=currentHeading(),ll=[f.lat,f.lon];
     L.circle(ll,{radius:f.acc,color:'#00B8D4',weight:2,fillOpacity:.08,interactive:false}).addTo(this.meLay);
     L.marker(ll,{icon:meIcon(hd?hd.h:null),interactive:false,zIndexOffset:2000}).addTo(this.meLay);
@@ -194,7 +199,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     this.updateMe();this.render();
   },
   fitCourse(force){const b=L.latLngBounds(this.pts.map(p=>[p.lat,p.lon]));if(b.isValid())this.map.fitBounds(b,{padding:[50,50],maxZoom:18,animate:!force})},
-  centerMe(){const f=GPS.last;if(!f){toast('Pas encore de position GPS.',true);return}if(!this.showMe()){toast('Position masquée pour cette course.',true);return}this.map.setView([f.lat,f.lon],Math.max(this.map.getZoom(),17))},
+  centerMe(){const f=GPS.last;if(!f){toast('Pas encore de position GPS.',true);return}if(!this.showMe()){toast(this.kind==='race'?'Position masquée par l\'organisateur pendant la course.':'Position masquée pendant la course (modifiable dans ⚙ Réglages).',true);return}this.map.setView([f.lat,f.lon],Math.max(this.map.getZoom(),17))},
   render(){
     if(current!=='run')return;
     const el=this.elapsed(),si=this.scoreInfo(),n=this.ctrls().length,done=this.visited.filter(v=>v.type==='control').length;
@@ -215,7 +220,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(this.status==='running'){
       if(this.mode==='ordered')s=T[0]?(T[0].type==='finish'?'Prochain : 🏁 arrivée':`Prochain : poste ${shortLabel(this.pts,this.pts.indexOf(T[0]))}`):'';
       else{const un=this.missing();s=un?`Reste ${un} poste${un>1?'s':''}`:(this.finishPt()?'Tous trouvés : 🏁 arrivée':'')}
-      if(settings.aide){const t=this.nearestTarget();if(t)s+=` · ${t.p.type==='finish'?'🏁':'n° '+shortLabel(this.pts,this.pts.indexOf(t.p))} à ${fmtDist(t.d)} ${cardS(bearing(GPS.last,t.p))}`}
+      if(settings.aide&&this.aideOK()){const t=this.nearestTarget();if(t)s+=` · ${t.p.type==='finish'?'🏁':'n° '+shortLabel(this.pts,this.pts.indexOf(t.p))} à ${fmtDist(t.d)} ${cardS(bearing(GPS.last,t.p))}`}
     }
     $('#runInfo').textContent=s;
   },
@@ -226,6 +231,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
       visited:this.visited.map(v=>({id:v.id,el:v.el,leg:v.leg,m:v.m})),score:si.pts,pen:si.pen,net:si.net,
       pos:f&&!f.sim?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:Math.round(f.acc),t:f.t}:f?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:3,t:f.t,sim:1}:null,
       bat:Battery.level,app:NATIVE?'android':'web',upd:now});
+    if(force||now-(this.lastTrk||0)>60000){this.lastTrk=now;const e=encTrack(this.track.slice(-3000));if(e)this.link.publishTrack(this.pid,this.name||'Coureur',e)}
   },
   saveSoon(){if(Date.now()-this.lastSave>20000)this.save()},
   save(){if(this.ended)return;this.lastSave=Date.now();
@@ -243,7 +249,7 @@ holdButton($('#runQuit'),1000,()=>Run.askQuit());
 $('#runGo').onclick=()=>Run.go();
 $('#runMe').onclick=()=>Run.centerMe();
 $('#runFit').onclick=()=>Run.fitCourse(false);
-$('#runOpts').onclick=()=>{Sheet.show('Réglages',$('#settingsBox'),()=>$('#settings main').appendChild($('#settingsBox')));bindSettings();Settings.compassUI()};
+$('#runOpts').onclick=()=>{Sheet.show('Réglages',$('#settingsBox'),()=>$('#settings main').appendChild($('#settingsBox')));bindSettings()};
 
 /* ---------------- Résultats ---------------- */
 const Results={cur:null,

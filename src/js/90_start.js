@@ -19,4 +19,4 @@ window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)})
     if(v){Create.draft=dr;Create.open()}
   }
 })();
-window.ShadowCO={GPS,Run,Org,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
+window.ShadowCO={GPS,Run,Org,Replay,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};

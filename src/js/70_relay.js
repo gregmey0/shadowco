@@ -64,6 +64,11 @@ class Mqtt{
   close(){this.closed=true;clearTimeout(this.rt);clearInterval(this.ka);try{this._send(new Uint8Array([0xE0,0]));this.ws&&this.ws.close()}catch(e){}}
 }
 
+/* Trace compacte : différences entières (1e-5 degré ≈ 1 m, secondes) */
+function encTrack(tr){if(!tr||!tr.length)return null;const t0=tr[0][2];let a0=0,b0=0,c0=0;const d=[];
+  for(const q of tr){const a=Math.round(q[0]*1e5),b=Math.round(q[1]*1e5),c=Math.round((q[2]-t0)/1000);d.push(a-a0,b-b0,c-c0);a0=a;b0=b;c0=c}return{t0,d}}
+function decTrack(e){const o=[];if(!e||!e.d)return o;let a=0,b=0,c=0;for(let i=0;i+2<e.d.length;i+=3){a+=e.d[i];b+=e.d[i+1];c+=e.d[i+2];o.push([a/1e5,b/1e5,e.t0+c*1000])}return o}
+
 /* Lien coureur ↔ course */
 const RaceLink={
   async connect(code,{silent}={}){
@@ -71,6 +76,7 @@ const RaceLink={
     const{key,tid}=await deriveRace(code),base='shco/v1/'+tid,m=new Mqtt(BROKERS[code[0]]);
     const link={code,key,base,m,race:null,connected:false,onRace:null,ownedByRun:true,
       publishState(st){seal(key,Object.assign({v:1,type:'p'},st)).then(b=>m.publish(base+'/p/'+st.pid,b,true))},
+      publishTrack(pid,name,e){seal(key,Object.assign({v:1,type:'t',pid,name},e)).then(b=>m.publish(base+'/t/'+pid,b,true))},
       close(){m.close()}};
     let waiter=null;
     m.onstate=c=>{link.connected=c;if(current==='run')Run.render()};
@@ -107,7 +113,8 @@ const Join={link:null,stream:null,
     this.link=link;
     const c=r.course;
     $('#jInfo').innerHTML=`<section class="card"><h2>${esc(r.name)}</h2><p>${MODES[c.mode].label}${c.mode==='score'?` · ${c.timeLimit} min`:''} · ${nControls(c.points)} postes</p>
-      <p class="hint">${r.opts.startType==='mass'?'Départ groupé donné par l\'organisateur':'Départ individuel'}${r.opts.showMe?'':' · position masquée sur la carte'}${r.opts.beep?'':' · sans bips d\'approche'} · validation à ${r.opts.radius} m${r.status==='started'?' · <b>course déjà lancée</b>':''}</p></section>`;
+      <p class="hint">${r.opts.startType==='mass'?'Départ groupé donné par l\'organisateur':'Départ individuel'}${r.opts.showMe?' · position visible pendant la course':' · position masquée après le départ'}${r.opts.beep?'':' · sans aides'} · validation à ${r.opts.radius} m${r.status==='started'?' · <b>course déjà lancée</b>':''}</p></section>`;
+    $('#jInfo').insertAdjacentHTML('beforeend','<p class="hint">En rejoignant, ta position et ta trace sont transmises à l\'organisateur pendant la course (chiffrées).</p>');
     $('#jConfirm').hidden=false;setTimeout(()=>$('#jName').focus(),50);
   },
   async join(){

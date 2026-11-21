@@ -1,4 +1,4 @@
-const VERSION='1.0.0';
+const VERSION='1.1.0';
 const CAP=window.capacitorExports||null;
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications')}:{};
@@ -17,9 +17,10 @@ const store={
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
 const K={courses:'shco.courses.v1',settings:'shco.settings.v1',draft:'shco.draft.v1',results:'shco.results.v1',active:'shco.active.v1',orgs:'shco.orgs.v1',me:'shco.me.v1'};
-const DEFAULTS={voiceMode:'app',rate:1.1,beep:true,approachDist:30,radius:10,vibrate:true,layer:'ign',contrast:'normal',showMe:true,aide:false,headingRef:'auto',avgSeconds:5,recordTrack:true,sim:false,_v:1};
+const DEFAULTS={voiceMode:'app',rate:1.1,beep:true,approachDist:30,radius:10,vibrate:true,layer:'ign',contrast:'normal',showMe:false,showTrack:true,aide:false,headingRef:'auto',avgSeconds:5,recordTrack:true,sim:false,_v:2};
 let settings=Object.assign({},DEFAULTS,store.get(K.settings,{}));
 const saveSettings=()=>store.set(K.settings,settings);
+if((settings._v||1)<2){Object.assign(settings,{showMe:false,showTrack:true,_v:2});saveSettings()}
 let courses=store.get(K.courses,[]);
 function saveCourses(){if(!store.set(K.courses,courses))toast('Mémoire du navigateur indisponible : pense à exporter le GPX !',true)}
 let results=store.get(K.results,[]);

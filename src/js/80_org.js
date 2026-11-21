@@ -7,7 +7,7 @@ const OrgSetup={course:null,
     $('#osMode').value=c.mode||'ordered';$('#osLimit').value=c.timeLimit||45;$('#osPen').value=c.penalty==null?10:c.penalty;
     $('#osRadius').value=String(settings.radius||10);this.sync();
   },
-  sync(){$('#osScore').hidden=$('#osMode').value!=='score';$('#osModeHelp').textContent=MODES[$('#osMode').value].help;
+  sync(){$('#osScore').hidden=$('#osMode').value!=='score';$('#osTrackL').hidden=!$('#osShowMe').checked;$('#osModeHelp').textContent=MODES[$('#osMode').value].help;
     const hasStart=this.course&&this.course.points.some(p=>p.type==='start');
     $('#osStartHelp').textContent=$('#osStart').value==='mass'?'Tu appuieras sur « Lancer le départ » : tous les chronos démarrent ensemble.':hasStart?'Chaque coureur lance son chrono en passant sur le poste de départ ▲.':'Pas de poste de départ : chaque coureur lance son chrono avec le bouton « Je pars ».'},
   async create(){
@@ -21,45 +21,57 @@ const OrgSetup={course:null,
     const o={code:newCode(broker),name:$('#osName').value.trim()||c.name,created:new Date().toISOString(),status:'open',startAt:null,
       course:{id:c.id,name:c.name,mode,timeLimit:Math.max(1,parseInt($('#osLimit').value,10)||45),penalty:Math.max(0,parseInt($('#osPen').value,10)||0),
         points:c.points.map(p=>({id:p.id,lat:p.lat,lon:p.lon,type:p.type,name:p.name,pts:p.pts}))},
-      opts:{startType:$('#osStart').value,showMe:$('#osShowMe').checked,beep:$('#osBeep').checked,radius:parseInt($('#osRadius').value,10)||10}};
+      opts:{startType:$('#osStart').value,showMe:$('#osShowMe').checked,showTrack:$('#osTrack').checked,beep:$('#osBeep').checked,radius:parseInt($('#osRadius').value,10)||10}};
     const all=store.get(K.orgs,[]);all.push(o);store.set(K.orgs,all.slice(-30));
     await Org.open(o);Org.showQR();
   }
 };
-['#osMode','#osStart'].forEach(s=>$(s).addEventListener('change',()=>OrgSetup.sync()));
+['#osMode','#osStart','#osShowMe'].forEach(s=>$(s).addEventListener('change',()=>OrgSetup.sync()));
 $('#osCreate').onclick=()=>OrgSetup.create();
 
 /* ---------------- Organiser : suivi en direct ---------------- */
 const PALETTE=['#E6194B','#3CB44B','#4363D8','#F58231','#911EB4','#42D4F4','#F032E6','#9A6324','#000075','#808000','#469990','#DC143C','#2E8B57','#8B008B','#FF4500','#1E90FF'];
-const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runners:{},trails:{},tickI:null,focus:null,
-  statusLabel(s){return{open:'inscriptions ouvertes',started:'en cours',closed:'close',deleted:'effacée'}[s]||s},
+const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runners:{},trails:{},tracks:{},tickI:null,focus:null,lastSave:0,
+  statusLabel(s){return{open:'inscriptions ouvertes',started:'en cours',closed:'close',deleted:'archivée'}[s]||s},
+  dataKey(){return'shco.orgdata.'+this.o.code},
+  saveData(){if(!this.o)return;this.lastSave=Date.now();const tr={};Object.keys(this.runners).forEach(pid=>{const e=encTrack(this.fullTrack(pid));if(e)tr[pid]=e});
+    if(!store.set(this.dataKey(),{runners:this.runners,tracks:tr,saved:Date.now()}))toast('Mémoire pleine : exporte les résultats.',true)},
+  saveSoon(){if(Date.now()-this.lastSave>15000)this.saveData()},
+  /* trace la plus complète : trace envoyée par le coureur + positions reçues en direct */
+  fullTrack(pid){const a=(this.tracks[pid]||[]).concat(this.trails[pid]||[]).sort((x,y)=>x[2]-y[2]),o=[];
+    for(const q of a){const l=o[o.length-1];if(!l||q[2]-l[2]>=1500)o.push(q)}return o},
   save(){const all=store.get(K.orgs,[]),i=all.findIndex(x=>x.code===this.o.code);if(i>=0)all[i]=this.o;else all.push(this.o);store.set(K.orgs,all)},
   resume(code){const o=store.get(K.orgs,[]).find(x=>x.code===code);if(o)this.open(o)},
   async open(o){
-    this.o=o;this.runners={};this.trails={};this.focus=null;show('org');
+    this.o=o;this.runners={};this.trails={};this.tracks={};this.focus=null;Replay.close(true);show('org');
+    const sd=store.get('shco.orgdata.'+o.code,null);
+    if(sd){this.runners=sd.runners||{};Object.entries(sd.tracks||{}).forEach(([pid,e])=>{this.tracks[pid]=decTrack(e)})}
     $('#orgTitle').textContent=o.name;
     if(!this.map){this.map=makeMap($('#orgMap'),'org');this.lay=L.layerGroup().addTo(this.map);this.runLay=L.layerGroup().addTo(this.map)}else setMapStyle(this.map);
     const b=drawCourse(this.lay,o.course,{mode:o.course.mode});
     setTimeout(()=>{this.map.invalidateSize();if(b)this.map.fitBounds(b,{padding:[30,30],maxZoom:18})},80);
     this.render();
+    if(o.status==='deleted'){$('#orgNet').textContent='🗄';$('#orgNet').title='Course archivée sur cet appareil';return}
     const{key,tid}=await deriveRace(o.code);this.key=key;this.base='shco/v1/'+tid;
     if(this.m)this.m.close();const m=this.m=new Mqtt(BROKERS[o.code[0]]);
     m.onstate=c=>{$('#orgNet').textContent=c?'📡':'📡✖';$('#orgNet').title=c?'Connecté au relais':'Relais injoignable, nouvel essai…';if(c)this.publishRace()};
     m.onMessage(async(topic,pl)=>{
-      if(!topic.startsWith(this.base+'/p/')||!pl.length)return;
+      if(!pl.length)return;
+      if(topic.startsWith(this.base+'/t/')){try{const t=await unseal(this.key,pl);if(t&&t.pid){this.tracks[t.pid]=decTrack(t);this.saveSoon()}}catch(e){}return}
+      if(!topic.startsWith(this.base+'/p/'))return;
       try{const st=await unseal(this.key,pl);if(st&&st.pid)this.onRunner(st)}catch(e){}
     });
-    m.subscribe(this.base+'/p/+');m.connect();
+    m.subscribe(this.base+'/p/+');m.subscribe(this.base+'/t/+');m.connect();
     clearInterval(this.tickI);this.tickI=setInterval(()=>{if(current==='org')this.render()},1000);
   },
-  leave(){clearInterval(this.tickI);if(this.m){this.m.close();this.m=null}},
+  leave(){Replay.close(true);clearInterval(this.tickI);if(this.o&&Object.keys(this.runners).length)this.saveData();if(this.m){this.m.close();this.m=null}},
   raceMsg(){const o=this.o;return{v:1,type:'race',name:o.name,course:{mode:o.course.mode,timeLimit:o.course.timeLimit,penalty:o.course.penalty,points:o.course.points},opts:o.opts,status:o.status,startAt:o.startAt,created:o.created}},
   async publishRace(){if(!this.m||!this.key||this.o.status==='deleted')return;this.m.publish(this.base+'/race',await seal(this.key,this.raceMsg()),true)},
   onRunner(st){
     const prev=this.runners[st.pid];if(prev&&prev.upd>st.upd)return;
     this.runners[st.pid]=st;
     if(st.pos){const tr=this.trails[st.pid]||(this.trails[st.pid]=[]),l=tr[tr.length-1];if(!l||l[2]!==st.pos.t){tr.push([st.pos.lat,st.pos.lon,st.pos.t]);if(tr.length>400)tr.shift()}}
-    if(current==='org')this.render();
+    this.saveSoon();if(current==='org')this.render();
   },
   color(pid){let h=0;for(const ch of pid)h=(h*31+ch.charCodeAt(0))>>>0;return PALETTE[h%PALETTE.length]},
   ptById(id){return this.o.course.points.find(p=>p.id===id)},
@@ -86,9 +98,9 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     if(st.status==='finished')return'🏁 arrivé';return'🏃 en course';
   },
   render(){
-    const o=this.o;if(!o)return;
+    const o=this.o;if(!o||Replay.on)return;
     $('#orgStatus').textContent=this.statusLabel(o.status);$('#orgStatus').className='tag st-'+o.status;
-    $('#orgLaunch').hidden=!(o.opts.startType==='mass'&&o.status==='open');$('#orgClose').hidden=o.status==='closed';
+    $('#orgLaunch').hidden=!(o.opts.startType==='mass'&&o.status==='open');$('#orgClose').hidden=o.status==='closed'||o.status==='deleted';$('#orgQR').hidden=o.status==='deleted';
     const sc=o.course.mode==='score',rk=this.ranking(),now=Date.now();
     const cnt={running:0,finished:0,waiting:0};rk.forEach(r=>{if(cnt[r.st.status]!=null)cnt[r.st.status]++});
     const raceEl=o.startAt?now-o.startAt:null;
@@ -103,7 +115,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
   drawRunners(){
     this.runLay.clearLayers();const now=Date.now();
     Object.values(this.runners).forEach(st=>{
-      if(!st.pos)return;const col=this.color(st.pid),i=this.info(st),tr=this.trails[st.pid]||[];
+      if(!st.pos)return;const col=this.color(st.pid),i=this.info(st),tr=this.fullTrack(st.pid);
       if(tr.length>1)L.polyline(tr.map(q=>[q[0],q[1]]),{color:col,weight:3,opacity:.6,interactive:false}).addTo(this.runLay);
       const ini=st.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
       L.marker([st.pos.lat,st.pos.lon],{icon:L.divIcon({className:'rmk'+(i.stale?' stale':'')+(i.immobile?' alert':'')+(this.focus===st.pid?' sel':''),html:`<span style="background:${col}">${esc(ini)}</span><em>${esc(st.name)}</em>`,iconSize:[34,34],iconAnchor:[17,17]}),zIndexOffset:this.focus===st.pid?3000:1000})
@@ -161,13 +173,17 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     saveFile(slug('resultats_'+this.o.name)+'.csv','﻿'+[head.join(';'),...lines].join('\n'),'text/csv');
   },
   async more(){
-    const v=await modal({title:'Course : '+this.o.name,body:`<p class="hint">Code ${fmtCode(this.o.code)} · ${this.statusLabel(this.o.status)}</p>`,buttons:[{label:'⬇ Résultats CSV (tableur)',value:'csv'},{label:'🧹 Effacer la course du relais',value:'purge',danger:true},{label:'Fermer',value:null,primary:true}]});
+    const del=this.o.status==='deleted';
+    const v=await modal({title:'Course : '+this.o.name,body:`<p class="hint">Code ${fmtCode(this.o.code)} · ${this.statusLabel(this.o.status)}</p>`,buttons:[{label:'⬇ Résultats CSV (tableur)',value:'csv'},del?{label:'🗑 Supprimer de cet appareil (résultats et replay)',value:'local',danger:true}:{label:'🧹 Effacer la course du relais',value:'purge',danger:true},{label:'Fermer',value:null,primary:true}]});
     if(v==='csv')this.exportCSV();
+    if(v==='local'){const ok=await modal({title:'Supprimer cette course de l\'appareil ?',body:'<p>Les résultats et le replay seront perdus. Exporte le CSV avant si besoin.</p>',buttons:[{label:'🗑 Supprimer',value:true,danger:true},{label:'Annuler',value:false}]});
+      if(ok){store.del(this.dataKey());store.set(K.orgs,store.get(K.orgs,[]).filter(x=>x.code!==this.o.code));this.o=null;toast('Course supprimée de l\'appareil');show('home')}return}
     if(v==='purge'){
       const ok=await modal({title:'Effacer la course du relais ?',body:'<p>Les coureurs ne pourront plus la rejoindre et leurs données sont retirées du relais. Exporte les résultats avant.</p>',buttons:[{label:'🧹 Effacer',value:true,danger:true},{label:'Annuler',value:false}]});
       if(!ok)return;const e=new Uint8Array(0);
-      Object.keys(this.runners).forEach(pid=>this.m.publish(this.base+'/p/'+pid,e,true));this.m.publish(this.base+'/race',e,true);
-      this.o.status='deleted';this.save();toast('Course effacée du relais');setTimeout(()=>show('home'),800);
+      this.saveData();
+      Object.keys(this.runners).forEach(pid=>{this.m.publish(this.base+'/p/'+pid,e,true);this.m.publish(this.base+'/t/'+pid,e,true)});this.m.publish(this.base+'/race',e,true);
+      this.o.status='deleted';this.save();toast('Course effacée du relais : résultats et replay restent sur cet appareil');setTimeout(()=>show('home'),900);
     }
   }
 };
@@ -178,3 +194,51 @@ $('#orgQR').onclick=()=>Org.showQR();
 $('#orgRank').onclick=()=>Org.showRanking();
 $('#orgMore').onclick=()=>Org.more();
 $('#orgFit').onclick=()=>{const b=L.latLngBounds(Org.o.course.points.map(p=>[p.lat,p.lon]));Object.values(Org.runners).forEach(r=>{if(r.pos)b.extend([r.pos.lat,r.pos.lon])});if(b.isValid())Org.map.fitBounds(b,{padding:[30,30],maxZoom:18})};
+
+/* ---------------- Replay de la course ---------------- */
+const Replay={on:false,T:0,t0:0,t1:0,playing:false,lay:null,data:[],hidden:new Set(),timer:null,
+  open(){
+    const o=Org.o;if(!o)return;
+    const data=Object.values(Org.runners).map(st=>({st,tr:Org.fullTrack(st.pid),col:Org.color(st.pid)})).filter(d=>d.tr.length>1);
+    if(!data.length){toast('Pas encore de trajets à rejouer : les traces arrivent pendant la course.',true);return}
+    let t0=Infinity,t1=0;data.forEach(d=>{t0=Math.min(t0,d.tr[0][2]);t1=Math.max(t1,d.tr[d.tr.length-1][2])});
+    if(o.startAt&&o.startAt-30000>t0&&o.startAt<t1)t0=o.startAt-30000;
+    Object.assign(this,{data,t0,t1,T:t0,on:true,playing:false});this.hidden=new Set();
+    if(!this.lay)this.lay=L.layerGroup().addTo(Org.map);Org.runLay.clearLayers();
+    $('#orgReplay').hidden=false;$('#orgLive').hidden=true;$('#orgbarLive').hidden=true;
+    this.legend();this.draw();
+    const b=L.latLngBounds([]);data.forEach(d=>d.tr.forEach(q=>b.extend([q[0],q[1]])));o.course.points.forEach(p=>b.extend([p.lat,p.lon]));
+    if(b.isValid())Org.map.fitBounds(b,{padding:[30,30],maxZoom:18});
+  },
+  close(silent){if(!this.on)return;this.pause();this.on=false;if(this.lay)this.lay.clearLayers();$('#orgReplay').hidden=true;$('#orgLive').hidden=false;$('#orgbarLive').hidden=false;if(!silent)Org.render()},
+  play(){if(this.T>=this.t1)this.T=this.t0;this.playing=true;$('#rpPlay').textContent='⏸';clearInterval(this.timer);
+    this.timer=setInterval(()=>{this.T=Math.min(this.t1,this.T+100*this.speed());this.draw();if(this.T>=this.t1)this.pause()},100)},
+  pause(){this.playing=false;clearInterval(this.timer);const b=$('#rpPlay');if(b)b.textContent='▶'},
+  speed(){return parseFloat($('#rpSpeed').value)||30},
+  at(tr,T){let lo=0,hi=tr.length-1;if(T<tr[0][2])return null;while(lo<hi){const mid=(lo+hi+1)>>1;if(tr[mid][2]<=T)lo=mid;else hi=mid-1}
+    const a=tr[lo],b=tr[lo+1];if(!b||b[2]-a[2]>120000)return{i:lo,ll:[a[0],a[1]]};const k=(T-a[2])/(b[2]-a[2]);return{i:lo,ll:[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k]}},
+  draw(){
+    if(!this.on)return;this.lay.clearLayers();const o=Org.o,T=this.T;
+    this.data.forEach(d=>{
+      const n=(d.st.visited||[]).filter(v=>{const p=Org.ptById(v.id);return p&&p.type==='control'&&d.st.startAt&&d.st.startAt+v.el<=T}).length;
+      const c=document.getElementById('rpc-'+d.st.pid);if(c)c.textContent=n+'/'+o.course.points.filter(p=>p.type==='control').length;
+      if(this.hidden.has(d.st.pid))return;const p=this.at(d.tr,T);if(!p)return;
+      const tr=d.tr.slice(0,p.i+1).map(q=>[q[0],q[1]]);tr.push(p.ll);
+      if(tr.length>1)L.polyline(tr,{color:d.col,weight:4,opacity:.8,interactive:false}).addTo(this.lay);
+      const ini=d.st.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      L.marker(p.ll,{icon:L.divIcon({className:'rmk',html:`<span style="background:${d.col}">${esc(ini)}</span><em>${esc(d.st.name)}</em>`,iconSize:[34,34],iconAnchor:[17,17]}),interactive:false,zIndexOffset:1000}).addTo(this.lay);
+    });
+    const ref=o.startAt||this.t0,el=T-ref;
+    $('#rpTime').textContent=`${el<0?'avant le départ −'+fmtTime(-el):'⏱ '+fmtTime(el)} · ${new Date(T).toLocaleTimeString('fr-FR')}`;
+    $('#rpSlider').value=String(Math.round((T-this.t0)/Math.max(1,this.t1-this.t0)*1000));
+  },
+  legend(){
+    const n=Org.o.course.points.filter(p=>p.type==='control').length;
+    $('#rpLegend').innerHTML=this.data.map(d=>`<li><label class="chk"><input type="checkbox" data-rp="${d.st.pid}" checked><span class="dot" style="background:${d.col}"></span>${esc(d.st.name)}<span class="muted" id="rpc-${d.st.pid}">0/${n}</span></label></li>`).join('');
+  }
+};
+$('#orgReplayBtn').onclick=()=>Replay.open();
+$('#rpPlay').onclick=()=>{if(Replay.playing)Replay.pause();else Replay.play()};
+$('#rpExit').onclick=()=>Replay.close();
+$('#rpSlider').addEventListener('input',e=>{Replay.T=Replay.t0+(Replay.t1-Replay.t0)*(+e.target.value/1000);Replay.draw()});
+$('#rpLegend').addEventListener('change',e=>{const c=e.target.closest('[data-rp]');if(!c)return;if(c.checked)Replay.hidden.delete(c.dataset.rp);else Replay.hidden.add(c.dataset.rp);Replay.draw()});
