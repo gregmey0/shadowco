@@ -7,6 +7,7 @@ Application de course d'orientation pour coureurs voyants, avec suivi en direct 
 - **Course** : carte avec les postes sur le fond choisi (IGN, OpenStreetMap, relief, photo), validation automatique en passant sur le poste, temps par poste, bips d'approche en aide. Comme en vraie course d'orientation, la position du coureur n'est affichée que jusqu'au départ (option en course seul ; en course organisée, l'organisateur décide de l'affichage de la position et de la trace).
 - **Organisation en direct** : code + QR code pour rejoindre, départ groupé ou individuel, carte de tous les coureurs avec leur trace, postes, temps, batterie, alertes (immobile, sans nouvelles), classement et export CSV.
 - **Replay** : l'organisateur rejoue la course (curseur de temps, vitesse ×10 à ×120, postes validés au fil du temps). Les traces restent sur son appareil, même après effacement du relais.
+- **Suivi d'entraînement** (enseignant, entraîneur) : une séance sans parcours. Les pratiquants rejoignent avec le code ou le QR code et rangent leur téléphone ; l'encadrant suit tout le monde sur la carte en direct (trace, distance, vitesse moyenne, batterie, alertes), puis en replay. Bilan CSV et traces GPX.
 - **Échange** des parcours en GPX (compatible O'Guide).
 
 ## Installer
@@ -24,4 +25,4 @@ Le suivi en direct passe par un relais MQTT public (HiveMQ, à défaut EMQX). To
 - Android : projet Capacitor dans `android/`. Chaque push sur `main` compile l'APK (GitHub Actions) et le publie dans **Releases**.
 - La clé `android/app/shadowco-sideload.jks` est volontairement publique : elle sert seulement à ce que chaque nouvelle version s'installe par-dessus la précédente.
 
-Greg Meyer, STAPS Avignon.
+<sub>Greg Meyer, STAPS Avignon</sub>

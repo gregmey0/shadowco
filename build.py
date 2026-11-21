@@ -55,22 +55,10 @@ html = f"""<!DOCTYPE html>
 """
 (DIST / "index.html").write_text(html)
 
-icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#111"/><rect x="146" y="146" width="290" height="290" rx="18" fill="#444"/><rect x="96" y="96" width="290" height="290" rx="18" fill="#fff"/><polygon points="96,96 386,96 386,386" fill="#FF7A00"/><rect x="96" y="96" width="290" height="290" rx="18" fill="none" stroke="#000" stroke-width="10"/></svg>"""
-(DIST / "icon.svg").write_text(icon_svg)
-
-try:
-    from PIL import Image, ImageDraw
-    for size in (180, 192, 512):
-        s = size / 512
-        im = Image.new("RGBA", (size, size), (17, 17, 17, 255))
-        d = ImageDraw.Draw(im)
-        d.rectangle([146 * s, 146 * s, 436 * s, 436 * s], fill=(68, 68, 68))
-        d.rectangle([96 * s, 96 * s, 386 * s, 386 * s], fill=(255, 255, 255))
-        d.polygon([(96 * s, 96 * s), (386 * s, 96 * s), (386 * s, 386 * s)], fill=(255, 122, 0))
-        d.rectangle([96 * s, 96 * s, 386 * s, 386 * s], outline=(0, 0, 0), width=max(2, int(10 * s)))
-        im.save(DIST / f"icon-{size}.png")
-except ImportError:
-    print("PIL absent : icônes PNG non générées")
+# Icônes (balise CO devant le mont Ventoux) : générées par src/icons/gen_icon.py, PNG déjà rendus
+import shutil
+for f in ("icon.svg", "icon-180.png", "icon-192.png", "icon-512.png"):
+    shutil.copy(ROOT / "src" / "icons" / f, DIST / f)
 
 manifest = {
     "name": "Shadow CO – Course d'orientation connectée",
@@ -92,7 +80,7 @@ manifest = {
 (DIST / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
 
 sw = """// Shadow CO – service worker : l'appli fonctionne hors connexion une fois ouverte.
-const CACHE = 'shadowco-v1.1.0';
+const CACHE = 'shadowco-v1.2.0';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

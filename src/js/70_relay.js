@@ -67,6 +67,9 @@ class Mqtt{
 /* Trace compacte : différences entières (1e-5 degré ≈ 1 m, secondes) */
 function encTrack(tr){if(!tr||!tr.length)return null;const t0=tr[0][2];let a0=0,b0=0,c0=0;const d=[];
   for(const q of tr){const a=Math.round(q[0]*1e5),b=Math.round(q[1]*1e5),c=Math.round((q[2]-t0)/1000);d.push(a-a0,b-b0,c-c0);a0=a;b0=b;c0=c}return{t0,d}}
+/* distance d'une trace [lat,lon,t] en ignorant les sauts GPS (> 20 m/s) */
+function trackDist(tr){let d=0;for(let i=1;i<tr.length;i++){const a=tr[i-1],b=tr[i],s=dist({lat:a[0],lon:a[1]},{lat:b[0],lon:b[1]}),dt=Math.max(1,(b[2]-a[2])/1000);if(s/dt<20)d+=s}return d}
+function mergeTracks(a,b){const m=new Map();(a||[]).concat(b||[]).forEach(q=>m.set(q[2],q));return[...m.values()].sort((x,y)=>x[2]-y[2])}
 function decTrack(e){const o=[];if(!e||!e.d)return o;let a=0,b=0,c=0;for(let i=0;i+2<e.d.length;i+=3){a+=e.d[i];b+=e.d[i+1];c+=e.d[i+2];o.push([a/1e5,b/1e5,e.t0+c*1000])}return o}
 
 /* Lien coureur ↔ course */
@@ -79,7 +82,7 @@ const RaceLink={
       publishTrack(pid,name,e){seal(key,Object.assign({v:1,type:'t',pid,name},e)).then(b=>m.publish(base+'/t/'+pid,b,true))},
       close(){m.close()}};
     let waiter=null;
-    m.onstate=c=>{link.connected=c;if(current==='run')Run.render()};
+    m.onstate=c=>{link.connected=c;if(current==='run')Run.render();if(current==='follow')Follow.render()};
     m.onMessage(async(topic,pl)=>{
       if(topic!==base+'/race')return;
       if(!pl.length){link.race={status:'deleted'};if(link.onRace)link.onRace(link.race);if(waiter)waiter(link.race);return}
@@ -109,8 +112,14 @@ const Join={link:null,stream:null,
     if(current!=='join'){if(link)link.close();return}
     if(!link){$('#jInfo').innerHTML='<p class="warnbox">Course introuvable : vérifie le code et la connexion internet.</p>';return}
     const r=link.race;
-    if(r.status==='closed'||r.status==='deleted'){link.close();$('#jInfo').innerHTML='<p class="warnbox">Cette course est close.</p>';return}
+    if(r.status==='closed'||r.status==='deleted'){link.close();$('#jInfo').innerHTML=`<p class="warnbox">${r.kind==='train'?'Cette séance est terminée.':'Cette course est close.'}</p>`;return}
     this.link=link;
+    if(r.kind==='train'){
+      $('#jInfo').innerHTML=`<section class="card"><h2>📍 ${esc(r.name)}</h2><p>Suivi d'entraînement : rien à faire, ton téléphone envoie ta position à l'encadrant pendant la séance.</p>
+        <p class="hint">Rejoins, puis range le téléphone dans la poche ou le sac.</p><p class="hint web-only">Sur navigateur, l'écran doit rester allumé (le verrouiller coupe le suivi). Avec l'appli Android, tu peux le verrouiller.</p></section>
+        <p class="hint">Ta position et ta trace sont transmises à l'encadrant (chiffrées) jusqu'à la fin de la séance.</p>`;
+      $('#jGo').textContent='✔ Rejoindre le suivi';$('#jConfirm').hidden=false;setTimeout(()=>$('#jName').focus(),50);return}
+    $('#jGo').textContent='✔ Rejoindre la course';
     const c=r.course;
     $('#jInfo').innerHTML=`<section class="card"><h2>${esc(r.name)}</h2><p>${MODES[c.mode].label}${c.mode==='score'?` · ${c.timeLimit} min`:''} · ${nControls(c.points)} postes</p>
       <p class="hint">${r.opts.startType==='mass'?'Départ groupé donné par l\'organisateur':'Départ individuel'}${r.opts.showMe?' · position visible pendant la course':' · position masquée après le départ'}${r.opts.beep?'':' · sans aides'} · validation à ${r.opts.radius} m${r.status==='started'?' · <b>course déjà lancée</b>':''}</p></section>`;
@@ -120,7 +129,9 @@ const Join={link:null,stream:null,
   async join(){
     const name=$('#jName').value.trim();if(!name){toast('Indique ton nom ou ton prénom',true);$('#jName').focus();return}
     if(!this.link){toast('Cherche d\'abord la course',true);return}
-    store.set(K.me,name);if(!await Run.checkActive())return;
+    store.set(K.me,name);
+    if(this.link.race.kind==='train'){const link=this.link;this.link=null;Follow.begin({link,name});return}
+    if(!await Run.checkActive())return;
     const link=this.link,r=link.race,c=r.course;this.link=null;
     Snd.unlock();Voice.unlock();Compass.enable();
     Run.begin({kind:'race',course:{id:'race-'+link.code,name:r.name,mode:c.mode,timeLimit:c.timeLimit,penalty:c.penalty,points:c.points,created:r.created},name,opts:r.opts,race:link});

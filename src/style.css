@@ -138,7 +138,7 @@ button.paused{background:var(--warn);color:#000;border-color:var(--warn)}
 #runOptsSheet .no-run{display:none}
 #settingsBox{display:flex;flex-direction:column;gap:.85rem}
 .opts-foot{padding:0 1rem 1rem}
-.sign{text-align:center;color:var(--acc);font-size:1rem;font-weight:700;margin-top:1rem;letter-spacing:.02em}
+.sign{text-align:center;color:var(--muted);font-size:.75rem;font-weight:400;margin-top:2.5rem;opacity:.8}
 .ios-only{display:none}.ios .ios-only{display:revert}
 .ioshint{border:3px solid var(--acc);border-radius:14px;padding:.7rem .8rem;font-weight:700}
 .ioshint .shr{display:inline-block;border:2px solid currentColor;border-radius:6px;padding:0 .3rem;font-size:.9em}
@@ -205,3 +205,12 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
 .rplegend .chk{gap:.5rem}
 .rplegend .dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff}
 .rplegend .muted{margin-left:auto}
+.follow{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;align-items:stretch;text-align:center;gap:1rem;padding:calc(1.5rem + var(--sat)) 1.2rem calc(1.5rem + var(--sab))}
+.fw-icon{font-size:4.5rem;line-height:1}
+.follow h1{font-size:2rem;margin:0}
+.fw-name{font-size:1.3rem;font-weight:700;color:var(--acc);margin:0}
+.fw-state{font-size:1.1rem;margin:0}
+.follow .hold{margin-top:2rem}
+#fwIcon.on{animation:fwpulse 2.4s ease-in-out infinite}
+@keyframes fwpulse{50%{transform:scale(1.12);opacity:.75}}
+@media (prefers-reduced-motion:reduce){#fwIcon.on{animation:none}}

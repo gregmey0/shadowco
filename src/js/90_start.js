@@ -8,6 +8,7 @@ const joinHash=()=>{const m=/^#join-([0-9A-Za-z-]+)/.exec(location.hash);if(!m)r
 window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)});
 (async()=>{
   const c=joinHash();if(c){Join.open(c);return}
+  if(store.get(K.follow,null)){Follow.resume();return}
   const act=store.get(K.active,null);
   if(act&&(act.status==='running'||act.status==='waiting')){
     const v=await modal({title:'Course en cours',body:`<p><b>${esc(act.courseName)}</b></p><p class="hint">Cette course n'est pas terminée.</p>`,buttons:[{label:'⏯ Reprendre la course',value:true,primary:true},{label:'Plus tard',value:false}]});
@@ -19,4 +20,4 @@ window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)})
     if(v){Create.draft=dr;Create.open()}
   }
 })();
-window.ShadowCO={GPS,Run,Org,Replay,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
+window.ShadowCO={GPS,Run,Org,Replay,Follow,TrainSetup,trackDist,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};

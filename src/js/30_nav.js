@@ -1,6 +1,6 @@
 /* ---------------- Navigation ---------------- */
 let current='home';
-const PARENT={create:'home',library:'home',detail:'library',results:'home',help:'home',run:'home',join:'home',orgsetup:'detail',org:'home',settings:'home'};
+const PARENT={create:'home',library:'home',detail:'library',results:'home',help:'home',run:'home',join:'home',orgsetup:'detail',org:'home',settings:'home',follow:'home'};
 const leaveHooks={create:()=>Create.close(),org:()=>Org.leave(),join:()=>Join.leave()};
 function show(id){
   if(id===current)return;
@@ -16,6 +16,7 @@ window.addEventListener('popstate',()=>{
   try{history.pushState({s:current},'')}catch(e){}
   if(Sheet.open){Sheet.hide();return}
   if(current==='run'){Run.askQuit();return}
+  if(current==='follow'&&Follow.on){toast('Le suivi continue. Pour l\'arrêter : appui long sur « Arrêter le suivi ».');return}
   if(current==='create'){Create.askBack();return}
   const par=PARENT[current]||'home';if(par==='library')Lib.open();else if(par==='detail'&&Lib.cur)Lib.openDetail(Lib.cur.id);else show('home');
 });
@@ -38,10 +39,12 @@ const Home={deferred:null,
     $('#homeWarn').innerHTML=w.map(x=>`<div class="warnbox">${x}</div>`).join('')+(IOS&&!STANDALONE&&!NATIVE?`<div class="ioshint">📲 Sur iPhone : touche <span class="shr">Partager ⬆︎</span> en bas de Safari, puis « Sur l'écran d'accueil ». Shadow CO s'ouvrira ensuite comme une appli, en plein écran.</div>`:'');
     const act=store.get(K.active,null),orgs=store.get(K.orgs,[]);
     let h='';
+    const fw=store.get(K.follow,null);if(fw)h+=`<button class="primary" id="hFollow">📍 Suivi en cours : ${esc(fw.sname||'')}</button>`;
     if(act&&(act.status==='waiting'||act.status==='running'))h+=`<button class="primary" id="hResume">⏯ Reprendre ma course : ${esc(act.courseName)}</button>`;
-    if(orgs.length)h+=`<section class="card"><h2>Courses organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>📡 ${esc(o.name)}</span><span class="muted">${Org.statusLabel(o.status)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
+    if(orgs.length)h+=`<section class="card"><h2>Courses et séances organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>${o.kind==='train'?'📍':'📡'} ${esc(o.name)}</span><span class="muted">${Org.statusLabel(o.status,o.kind)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
     $('#homeExtra').innerHTML=h;
     const r=$('#hResume');if(r)r.onclick=()=>Run.resumeActive();
+    const hf=$('#hFollow');if(hf)hf.onclick=()=>Follow.resume();
     $('#hVersion').textContent='Version '+VERSION+(NATIVE?' · application Android':'');
   }
 };

@@ -1,4 +1,4 @@
-const VERSION='1.1.0';
+const VERSION='1.2.0';
 const CAP=window.capacitorExports||null;
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications')}:{};
@@ -16,7 +16,7 @@ const store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const K={courses:'shco.courses.v1',settings:'shco.settings.v1',draft:'shco.draft.v1',results:'shco.results.v1',active:'shco.active.v1',orgs:'shco.orgs.v1',me:'shco.me.v1'};
+const K={courses:'shco.courses.v1',settings:'shco.settings.v1',draft:'shco.draft.v1',results:'shco.results.v1',active:'shco.active.v1',orgs:'shco.orgs.v1',follow:'shco.follow.v1',me:'shco.me.v1'};
 const DEFAULTS={voiceMode:'app',rate:1.1,beep:true,approachDist:30,radius:10,vibrate:true,layer:'ign',contrast:'normal',showMe:false,showTrack:true,aide:false,headingRef:'auto',avgSeconds:5,recordTrack:true,sim:false,_v:2};
 let settings=Object.assign({},DEFAULTS,store.get(K.settings,{}));
 const saveSettings=()=>store.set(K.settings,settings);
@@ -106,7 +106,7 @@ const Wake={lock:null,want:false,
   async on(){this.want=true;if(NATIVE){P.awake.keepAwake().catch(()=>{});return}try{if('wakeLock' in navigator&&!this.lock){this.lock=await navigator.wakeLock.request('screen');this.lock.addEventListener('release',()=>{this.lock=null})}}catch(e){}},
   off(){this.want=false;if(NATIVE){P.awake.allowSleep().catch(()=>{});return}try{if(this.lock)this.lock.release()}catch(e){}this.lock=null}
 };
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(Wake.want&&!NATIVE)Wake.on();if(current==='run')Run.onResumeVisible()}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(Wake.want&&!NATIVE)Wake.on();if(current==='run')Run.onResumeVisible();if(current==='follow')Follow.onResumeVisible()}});
 
 /* ---------------- GPS ---------------- */
 const GPS={id:null,last:null,lastErrT:0,subs:new Set(),simPos:null,simTimer:null,simHead:null,simMoveT:0,
