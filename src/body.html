@@ -1,0 +1,260 @@
+<div id="simBanner" class="simbanner" hidden>MODE SIMULATION (position fictive)</div>
+
+<!-- ACCUEIL -->
+<section id="home" class="screen active">
+  <main class="home">
+    <div class="brand">
+      <svg width="76" height="76" viewBox="0 0 100 100" aria-hidden="true"><rect x="18" y="18" width="72" height="72" rx="6" fill="#3a3a3a"/><rect x="10" y="10" width="72" height="72" rx="6" fill="#fff"/><polygon points="10,10 82,10 82,82" fill="#FF7A00"/><rect x="10" y="10" width="72" height="72" rx="6" fill="none" stroke="#000" stroke-width="3"/></svg>
+      <div><h1 tabindex="-1">Shadow CO</h1><p>Course d'orientation connectée</p></div>
+    </div>
+    <div id="homeWarn"></div>
+    <div id="homeExtra"></div>
+    <button class="primary big" id="hJoin">🏃 Rejoindre une course</button>
+    <button class="big" id="hOrg">📡 Organiser une course</button>
+    <button class="big" id="hLib">📚 Mes parcours&nbsp;<span id="hCount"></span></button>
+    <div class="row"><button id="hCreate">➕ Créer un parcours</button><button id="hImport">📂 Importer un GPX</button></div>
+    <div class="row"><button id="hSettings">⚙ Réglages</button><button id="hHelp">❔ Aide</button></div>
+    <button id="hInstall" hidden>📲 Installer l'appli sur ce téléphone</button>
+    <p class="hint" id="hVersion"></p>
+    <p class="sign">Greg Meyer, STAPS Avignon</p>
+  </main>
+</section>
+
+<!-- CREATION -->
+<section id="create" class="screen">
+  <header class="bar"><button class="back" id="crBack" aria-label="Retour">←</button><h1 tabindex="-1">Créer un parcours</h1></header>
+  <div class="status"><span id="crGps" class="gps none">GPS : recherche…</span><span id="crCount">0 point</span></div>
+  <div id="createMap" class="map"></div>
+  <div class="simpad" id="crSimPad"></div>
+  <main>
+    <button class="primary big" id="crMain">📍 Enregistrer le DÉPART</button>
+    <div class="row"><button id="crFinishHere">🏁 Arrivée ici</button><button id="crFinishStart">🏁 Arrivée = départ</button></div>
+    <div class="row"><button id="crUndo">↶ Annuler le dernier point</button><button class="ok" id="crDone">✔ Terminer</button></div>
+    <p class="hint" id="crHint"></p>
+    <ol id="crList" class="plist"></ol>
+  </main>
+</section>
+
+<!-- BIBLIOTHEQUE -->
+<section id="library" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="libTitle">Mes parcours</h1></header>
+  <main>
+    <button id="libImport">📂 Importer un GPX</button>
+    <ul id="libList" class="cards"></ul>
+  </main>
+</section>
+
+<!-- FICHE PARCOURS -->
+<section id="detail" class="screen">
+  <header class="bar"><button class="back" data-go="library" aria-label="Retour">←</button><h1 tabindex="-1" id="dtTitle">Parcours</h1></header>
+  <div id="detailMap" class="map"></div>
+  <main>
+    <div class="row"><button class="primary big" id="dtRun">▶ Courir seul</button><button class="big ok" id="dtOrg">📡 Organiser</button></div>
+    <section class="card">
+      <h2>Type de course</h2>
+      <select id="dtMode" aria-label="Type de course"><option value="ordered">Ordre imposé</option><option value="free">Ordre libre</option><option value="score">Score (temps limité)</option></select>
+      <p class="hint" id="dtModeHelp"></p>
+      <div class="row" id="dtScoreOpts"><label>Temps limite (min)<input type="number" id="dtLimit" min="1" inputmode="numeric"></label><label>Pénalité / min de retard<input type="number" id="dtPenalty" min="0" inputmode="numeric"></label></div>
+    </section>
+    <div class="row"><button id="dtShare">📤 Partager le GPX</button><button id="dtDownload">⬇ Télécharger le GPX</button></div>
+    <div class="row"><button id="dtEdit">✋ Corriger les positions</button><button id="dtRename">✏ Renommer</button></div>
+    <p class="hint" id="dtEditHint" hidden>Fais glisser un poste sur la carte pour corriger sa position. Appuie à nouveau sur le bouton pour terminer.</p>
+    <div id="dtSummary" class="card"></div>
+    <ol id="dtList" class="plist"></ol>
+    <div id="dtResults"></div>
+    <button class="danger" id="dtDelete">🗑 Supprimer ce parcours</button>
+  </main>
+</section>
+
+<!-- REGLAGES -->
+<section id="settings" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1">Réglages</h1></header>
+  <main>
+    <div id="settingsBox">
+      <section class="card">
+        <h2>Carte</h2>
+        <label>Fond de carte
+          <select data-s="layer"><option value="ign">Plan IGN</option><option value="osm">OpenStreetMap</option><option value="topo">OpenTopoMap (relief)</option><option value="photo">Photo aérienne IGN</option></select></label>
+        <label>Contraste
+          <select data-s="contrast"><option value="normal">Normal (couleurs)</option><option value="high">Fort (noir et blanc)</option><option value="invert">Inversé (fond noir)</option></select></label>
+        <label class="chk"><input type="checkbox" data-s="showMe"> Afficher ma position sur la carte (si l'organisateur l'autorise)</label>
+      </section>
+      <section class="card">
+        <h2>Aides</h2>
+        <label class="chk"><input type="checkbox" data-s="beep"> Bips d'approche : de plus en plus rapides près d'un poste à trouver (si l'organisateur l'autorise)</label>
+        <label>Les bips commencent à
+          <select data-s="approachDist" data-num><option value="15">15 m</option><option value="20">20 m</option><option value="30">30 m</option><option value="50">50 m</option></select></label>
+        <label class="chk"><input type="checkbox" data-s="aide"> Afficher la distance et la direction du poste le plus proche</label>
+        <button type="button" id="testBeep">🔔 Tester les bips</button>
+      </section>
+      <section class="card">
+        <h2>Validation et annonces</h2>
+        <label>Rayon de validation (course seul ; en course organisée, c'est l'organisateur qui le fixe)
+          <select data-s="radius" data-num><option value="5">5 m</option><option value="8">8 m</option><option value="10">10 m</option><option value="15">15 m</option><option value="20">20 m</option></select></label>
+        <label>Annonce vocale des postes validés
+          <select data-s="voiceMode"><option value="app">Oui</option><option value="off">Non</option></select></label>
+        <label class="chk"><input type="checkbox" data-s="vibrate"> Vibrations</label>
+      </section>
+      <section class="card">
+        <h2>Boussole</h2>
+        <p id="compassState">…</p>
+        <button type="button" id="compassBtn" hidden>🧭 Autoriser la boussole</button>
+        <label>Orientation de la flèche de position
+          <select data-s="headingRef"><option value="auto">Mixte : boussole à l'arrêt, sens de déplacement en marche</option><option value="phone">Boussole du téléphone</option><option value="walk">Sens de déplacement uniquement</option></select></label>
+      </section>
+      <section class="card no-run">
+        <h2>Création de parcours</h2>
+        <label>Moyenne de la position GPS sur
+          <select data-s="avgSeconds" data-num><option value="0">0 s (instantané)</option><option value="5">5 secondes</option><option value="10">10 secondes</option><option value="20">20 secondes</option></select></label>
+        <label class="chk"><input type="checkbox" data-s="recordTrack"> Enregistrer aussi la trace du créateur</label>
+      </section>
+      <section class="card">
+        <h2>Test au bureau</h2>
+        <label class="chk"><input type="checkbox" data-s="sim"> Mode simulation : la position se déplace avec des flèches ou en touchant la carte</label>
+      </section>
+    </div>
+  </main>
+</section>
+
+<!-- COURSE (COUREUR) -->
+<section id="run" class="screen">
+  <div class="run-top">
+    <span id="runChrono">⏱ 0:00</span><span id="runProg"></span><span id="runNet" hidden>📡</span><button type="button" id="runOpts" aria-label="Réglages">⚙</button>
+  </div>
+  <div id="runInfo" class="run-info"></div>
+  <div id="runMapWrap">
+    <div id="runMap"></div>
+    <div class="mapbtns"><button type="button" id="runMe" aria-label="Centrer sur ma position">📍</button><button type="button" id="runFit" aria-label="Voir tout le parcours">🗺</button></div>
+    <div id="runWait" hidden><p id="runWaitTxt"></p><button type="button" class="primary big" id="runGo" hidden>▶ Je pars</button></div>
+  </div>
+  <div class="simpad" id="runSimPad"></div>
+  <div class="run-bar">
+    <button class="hold" id="runValidate">✔ Valider<small>appui long</small></button>
+    <button class="hold" id="runFinish">🏁 Terminer<small>appui long</small></button>
+    <button class="hold danger" id="runQuit">✖ Abandon<small>appui long</small></button>
+  </div>
+</section>
+
+<!-- RESULTATS -->
+<section id="results" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour à l'accueil">←</button><h1 tabindex="-1">Résultats</h1></header>
+  <main>
+    <div id="rsHead"></div>
+    <div class="bigtime" id="rsTotal"></div>
+    <p class="hint center" id="rsSub"></p>
+    <table class="res" id="rsTable"></table>
+    <div class="row"><button id="rsShare">📤 Partager la trace (GPX)</button><button id="rsCsv">⬇ Temps par poste (CSV)</button></div>
+    <button class="primary" data-go="home">Accueil</button>
+  </main>
+</section>
+
+<!-- REJOINDRE -->
+<section id="join" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1">Rejoindre une course</h1></header>
+  <main>
+    <label>Code de la course (donné par l'organisateur)
+      <input type="text" id="jCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="HK7-Q4M-ZP2D" maxlength="16"></label>
+    <div class="row"><button type="button" class="primary" id="jLookup">🔎 Chercher la course</button><button type="button" id="jScan" hidden>📷 Scanner le QR</button></div>
+    <video id="jVideo" playsinline muted hidden></video>
+    <div id="jInfo"></div>
+    <div id="jConfirm" class="card" hidden>
+      <label>Ton nom (visible par l'organisateur)<input type="text" id="jName" autocomplete="given-name" placeholder="Prénom Nom"></label>
+      <button type="button" class="primary big" id="jGo">✔ Rejoindre la course</button>
+    </div>
+  </main>
+</section>
+
+<!-- ORGANISER : PREPARATION -->
+<section id="orgsetup" class="screen">
+  <header class="bar"><button class="back" data-go="detail" aria-label="Retour">←</button><h1 tabindex="-1">Organiser une course</h1></header>
+  <main>
+    <div id="osCourse" class="card"></div>
+    <section class="card">
+      <h2>Course</h2>
+      <label>Nom affiché aux coureurs<input type="text" id="osName"></label>
+      <label>Type de course<select id="osMode"><option value="ordered">Ordre imposé</option><option value="free">Ordre libre</option><option value="score">Score (temps limité)</option></select></label>
+      <p class="hint" id="osModeHelp"></p>
+      <div class="row" id="osScore"><label>Temps limite (min)<input type="number" id="osLimit" min="1" inputmode="numeric"></label><label>Pénalité / min de retard<input type="number" id="osPen" min="0" inputmode="numeric"></label></div>
+      <label>Départ<select id="osStart"><option value="mass">Groupé : je donne le départ à tous</option><option value="individual">Individuel : chacun part de son côté</option></select></label>
+      <p class="hint" id="osStartHelp"></p>
+    </section>
+    <section class="card">
+      <h2>Règles pour les coureurs</h2>
+      <label class="chk"><input type="checkbox" id="osShowMe" checked> Les coureurs voient leur position sur la carte</label>
+      <label class="chk"><input type="checkbox" id="osBeep" checked> Bips d'approche autorisés</label>
+      <label>Rayon de validation des postes<select id="osRadius"><option value="5">5 m</option><option value="8">8 m</option><option value="10">10 m</option><option value="15">15 m</option><option value="20">20 m</option></select></label>
+    </section>
+    <p class="hint">Les positions passent par un relais internet public, chiffrées avec le code de la course : seuls ceux qui ont le code peuvent les lire.</p>
+    <button type="button" class="primary big" id="osCreate">📡 Créer la course</button>
+  </main>
+</section>
+
+<!-- ORGANISER : SUIVI -->
+<section id="org" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
+  <div class="orgbar">
+    <span id="orgStatus" class="tag"></span>
+    <button type="button" id="orgQR">🔗 Code / QR</button>
+    <button type="button" class="primary" id="orgLaunch" hidden>▶ Lancer le départ</button>
+    <button type="button" id="orgRank">📊 Classement</button>
+    <button type="button" class="danger" id="orgClose">🏁 Clore</button>
+    <button type="button" id="orgMore" aria-label="Plus d'options">⋯</button>
+  </div>
+  <div class="orgmapwrap"><div id="orgMap" class="map"></div><div class="mapbtns"><button type="button" id="orgFit" aria-label="Voir tout le monde">🗺</button></div></div>
+  <main>
+    <p id="orgCount"></p>
+    <ul id="orgList" class="runners"></ul>
+  </main>
+</section>
+
+<!-- AIDE -->
+<section id="help" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1">Aide</h1></header>
+  <main class="help">
+    <h2>1. Créer un parcours</h2>
+    <ul>
+      <li>Sur le terrain : enregistre le départ, puis chaque poste en te tenant dessus, puis l'arrivée (ou « Arrivée = départ »).</li>
+      <li>À la fin, choisis le type de course : <b>ordre imposé</b>, <b>ordre libre</b> ou <b>score</b> (temps limité, points par poste modifiables dans la fiche du parcours).</li>
+      <li>Les parcours s'échangent en GPX (Partager / Importer), et ceux d'O'Guide sont compatibles.</li>
+    </ul>
+    <h2>2. Courir</h2>
+    <ul>
+      <li>La carte montre tous les postes avec les symboles de course d'orientation ; le poste à chercher est entouré.</li>
+      <li>Un poste se valide tout seul quand on passe dessus (carillon et vibration) ; les temps par poste sont enregistrés.</li>
+      <li>Aide facultative : bips d'approche de plus en plus rapides, distance et direction du poste le plus proche (Réglages).</li>
+      <li>GPS capricieux ? « Valider » (appui long) prend le poste à chercher le plus proche, signalé « manuel » dans les résultats.</li>
+    </ul>
+    <h2>3. Organiser une course en direct</h2>
+    <ul>
+      <li>Fiche du parcours › <b>📡 Organiser</b> : type de course, départ groupé ou individuel, position visible ou non, bips autorisés, rayon de validation.</li>
+      <li>Un <b>code</b> et un <b>QR code</b> s'affichent : les coureurs le scannent avec l'appareil photo ou tapent le code dans « Rejoindre une course ».</li>
+      <li>Le tableau de bord montre chaque coureur sur la carte (avec sa trace), ses postes, son temps, sa batterie, et signale qui est immobile ou sans nouvelles.</li>
+      <li>Départ groupé : « Lancer le départ » démarre tous les chronos. « Clore » arrête la course. Le classement s'exporte en CSV pour un tableur.</li>
+      <li>Tu peux quitter le tableau de bord et y revenir depuis l'accueil : rien n'est perdu.</li>
+    </ul>
+    <h2>Bon à savoir</h2>
+    <ul>
+      <li>Le suivi passe par internet (4G). Sans réseau, la course continue et les données partent dès le retour de la connexion.</li>
+      <li class="web-only">Sur navigateur (iPhone notamment), garde l'écran allumé pendant la course pour que la position continue d'être envoyée.</li>
+      <li class="native-only">Sur l'appli Android, le suivi continue téléphone verrouillé (notification « Shadow CO – GPS actif »).</li>
+      <li>Relais : les données passent par un service public gratuit, chiffrées avec le code de la course. Pense à « Effacer la course du relais » à la fin (menu ⋯).</li>
+    </ul>
+  </main>
+</section>
+
+<!-- FEUILLE / DIALOGUES -->
+<div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <header class="bar"><h1 id="sheetTitle" tabindex="-1"></h1><button type="button" class="primary sheetClose">✔ Fermer</button></header>
+  <main id="sheetBody"></main>
+</div>
+<div id="toast" role="status"></div>
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="box">
+    <h2 id="modalTitle" tabindex="-1"></h2>
+    <div id="modalBody"></div>
+    <input type="text" id="modalInput" autocomplete="off">
+    <div id="modalBtns"></div>
+  </div>
+</div>
+<div id="live" class="sr" aria-live="assertive" aria-atomic="true"></div>
+<input type="file" id="gpxInput" multiple hidden>

@@ -1,0 +1,65 @@
+name: Application Android (APK)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Compiler l'appli (web + Android)
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            npm ci &&
+            python3 build.py &&
+            npx cap sync android &&
+            cd android && chmod +x gradlew &&
+            ./gradlew assembleRelease --no-daemon --stacktrace --warning-mode=summary
+          } 2>&1 | tee build.log
+
+      - name: Publier l'APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk ShadowCO.apk
+          TAG="android-${{ github.run_number }}"
+          VER=$(node -p "require('./package.json').version")
+          NOTES=$'**Installer sur Android :** ouvrir ce lien sur le téléphone, télécharger **ShadowCO.apk**, l\'ouvrir puis autoriser l\'installation depuis le navigateur si Android le demande.\n\nVersion '"$VER"', compilation n° ${{ github.run_number }} (commit ${{ github.sha }}).'
+          gh release create "$TAG" ShadowCO.apk --title "Shadow CO $VER pour Android – compilation ${{ github.run_number }}" --notes "$NOTES" --latest
+
+      - name: Conserver le journal en cas d'échec
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p /tmp/ci
+          { echo "Compilation ${{ github.run_number }} – commit ${{ github.sha }}"; tail -n 400 build.log 2>/dev/null || echo "(pas de journal)"; } > /tmp/ci/last-failure.log
+          cd /tmp/ci && git init -q && git checkout -q -b ci-logs
+          git config user.name "github-actions[bot]" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add last-failure.log && git commit -qm "Journal d'échec, compilation ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-logs

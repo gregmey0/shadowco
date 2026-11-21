@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shadow CO</string>
+    <string name="title_activity_main">Shadow CO</string>
+    <string name="package_name">org.shadowco.app</string>
+    <string name="custom_url_scheme">org.shadowco.app</string>
+    <string name="capacitor_background_geolocation_notification_channel_name">Suivi de course</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_shadowco</string>
+    <string name="capacitor_background_geolocation_notification_color">#FF8A00</string>
+</resources>

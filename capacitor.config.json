@@ -1,0 +1,16 @@
+{
+  "appId": "org.shadowco.app",
+  "appName": "Shadow CO",
+  "webDir": "www",
+  "android": {
+    "useLegacyBridge": true,
+    "backgroundColor": "#000000"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}
