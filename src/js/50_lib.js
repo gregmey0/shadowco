@@ -57,6 +57,7 @@ $('#libList').addEventListener('click',e=>{const o=e.target.closest('[data-open]
 $('#dtRun').onclick=()=>Run.startSolo(Lib.cur);
 $('#dtOrg').onclick=()=>OrgSetup.open(Lib.cur);
 $('#dtShare').onclick=()=>shareFile(slug(Lib.cur.name)+'.gpx',courseToGPX(Lib.cur));
+$('#dtPrint').onclick=()=>PrintMap.open(Lib.cur);
 $('#dtDownload').onclick=()=>saveFile(slug(Lib.cur.name)+'.gpx',courseToGPX(Lib.cur));
 $('#dtEdit').onclick=()=>{Lib.editing=!Lib.editing;Lib.draw(false);Lib.renderInfo()};
 $('#dtRename').onclick=async()=>{const r=await modal({title:'Renommer le parcours',input:{value:Lib.cur.name},buttons:[{label:'OK',value:true,primary:true},{label:'Annuler',value:false}]});if(r.value&&r.text){Lib.cur.name=r.text;saveCourses();$('#dtTitle').textContent=r.text}};

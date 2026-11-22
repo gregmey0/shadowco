@@ -214,3 +214,8 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
 #fwIcon.on{animation:fwpulse 2.4s ease-in-out infinite}
 @keyframes fwpulse{50%{transform:scale(1.12);opacity:.75}}
 @media (prefers-reduced-motion:reduce){#fwIcon.on{animation:none}}
+/* impression / export de la carte */
+.prt label{display:block}
+.prt .row label{flex:1;min-width:0}
+.prprev{display:block;width:100%;max-width:520px;margin:.6rem auto;border:2px solid #888;background:#fff;min-height:120px}
+#dtPrint{width:100%}

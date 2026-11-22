@@ -9,6 +9,7 @@ Application de course d'orientation pour coureurs voyants, avec suivi en direct 
 - **Replay** : l'organisateur rejoue la course (curseur de temps, vitesse ×10 à ×120, postes validés au fil du temps). Les traces restent sur son appareil, même après effacement du relais.
 - **Suivi d'entraînement** (enseignant, entraîneur) : une séance sans parcours. Les pratiquants rejoignent avec le code ou le QR code et rangent leur téléphone ; l'encadrant suit tout le monde sur la carte en direct (trace, distance, vitesse moyenne, batterie, alertes), puis en replay. Bilan CSV et traces GPX.
 - **Échange** des parcours en GPX (compatible O'Guide).
+- **Impression** : carte du parcours en A4 (PDF ou image PNG) avec surimpression CO, fond au choix, échelle, nord et description des postes ; symboles grands pour malvoyants.
 
 ## Installer
 
