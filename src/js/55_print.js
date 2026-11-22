@@ -183,7 +183,7 @@ const PrintMap={
     this.c=c;this.o=o;this.res=null;
     const box=document.createElement('div');box.className='prt';
     const opt=(v,t,cur)=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${t}</option>`;
-    box.innerHTML=`<label>Fond de carte<select id="prLayer">${opt('ign','Plan IGN',o.layer)}${opt('osm','OpenStreetMap',o.layer)}${opt('topo','OpenTopoMap (relief)',o.layer)}${opt('photo','Photo aérienne IGN',o.layer)}${this.hasPaths(c)?opt('paths','Chemins seuls, noir sur blanc (fort contraste, papier thermogonflé)',o.layer):''}${opt('none','Sans fond (parcours seul)',o.layer)}</select></label>
+    box.innerHTML=`<label>Fond de carte<select id="prLayer">${opt('ign','Plan IGN',o.layer)}${opt('osm','OpenStreetMap',o.layer)}${opt('topo','OpenTopoMap (relief)',o.layer)}${opt('photo','Photo aérienne IGN',o.layer)}${this.hasPaths(c)?opt('paths','Chemins seuls, noir sur blanc (relief)',o.layer):''}${opt('none','Sans fond (parcours seul)',o.layer)}</select></label>
       <div class="row"><label>Échelle<select id="prScale">${opt('auto','Automatique',o.scale)}${[2500,4000,5000,7500,10000,15000].map(s=>opt(s,'1:'+s.toLocaleString('fr-FR'),o.scale)).join('')}</select></label>
       <label>Orientation<select id="prOrient">${opt('auto','Automatique',o.orient)}${opt('port','Portrait',o.orient)}${opt('land','Paysage',o.orient)}</select></label></div>
       <label>Symboles<select id="prStyle">${opt('std','Standard (course d\'orientation)',o.style)}${opt('big','Grands et épais (malvoyants)',o.style)}</select></label>

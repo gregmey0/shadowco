@@ -216,6 +216,7 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
 @media (prefers-reduced-motion:reduce){#fwIcon.on{animation:none}}
 /* impression / export de la carte */
 .prt label{display:block}
+.prt select{width:100%;max-width:100%;min-width:0}
 .prt .row label{flex:1;min-width:0}
 .prprev{display:block;width:100%;max-width:520px;margin:.6rem auto;border:2px solid #888;background:#fff;min-height:120px}
 #dtPrint{width:100%}
