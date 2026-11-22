@@ -5,6 +5,10 @@ const BROKERS={H:'wss://broker.hivemq.com:8884/mqtt',E:'wss://broker.emqx.io:808
 (()=>{const t=store.get('shco.testbroker',null);if(t)BROKERS.T=t})();
 const CODE_ABC='23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const WEB_URL='https://gregmey0.github.io/shadowco/';
+/* ouverture de l'application Android depuis la page web (QR code scanné avec l'appareil photo) */
+const APP={name:'Shadow CO',scheme:'shadowco',pkg:'org.shadowco.app',apk:'https://github.com/gregmey0/shadowco/releases/latest/download/ShadowCO.apk'};
+function appIntent(code){const fb=location.origin+location.pathname+'?noapp=1#join-'+code;
+  return`intent://join-${code}#Intent;scheme=${APP.scheme};package=${APP.pkg};S.browser_fallback_url=${encodeURIComponent(fb)};end`}
 function newCode(b){const r=crypto.getRandomValues(new Uint8Array(9));return b+[...r].map(x=>CODE_ABC[x%CODE_ABC.length]).join('')}
 function normCode(s){const m=/join-([0-9A-Z-]+)/i.exec(String(s||''));return(m?m[1]:String(s||'')).toUpperCase().replace(/[^0-9A-Z]/g,'')}
 function validCode(c){return c.length===10&&!!BROKERS[c[0]]&&[...c.slice(1)].every(ch=>CODE_ABC.includes(ch))}
@@ -98,15 +102,21 @@ const RaceLink={
 /* ---------------- Rejoindre une course ---------------- */
 const Join={link:null,stream:null,
   open(code){
-    show('join');$('#jCode').value=code?fmtCode(normCode(code)):'';$('#jName').value=store.get(K.me,'');
+    show('join');this.appBtn(code);$('#jCode').value=code?fmtCode(normCode(code)):'';$('#jName').value=store.get(K.me,'');
     $('#jInfo').innerHTML='';$('#jConfirm').hidden=true;$('#jScan').hidden=!('BarcodeDetector' in window&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     if(code)this.lookup();
+  },
+  /* page web sur Android : proposer d'ouvrir l'application (suivi téléphone verrouillé) */
+  appBtn(code){
+    const c=normCode(code||''),noapp=/[?&]noapp=1/.test(location.search),ok=!NATIVE&&ANDROID&&validCode(c);
+    $('#jApp').hidden=!ok||noapp;$('#jAppNo').hidden=!ok||!noapp;
+    if(ok)$('#jApp').onclick=()=>{location.href=appIntent(c)};
   },
   leave(){this.stopScan();if(this.link){this.link.close();this.link=null}},
   async lookup(){
     const code=normCode($('#jCode').value);
     if(!validCode(code)){toast('Code invalide : 10 caractères, par exemple HK7-Q4M-ZP2D',true);return}
-    $('#jCode').value=fmtCode(code);$('#jConfirm').hidden=true;$('#jInfo').innerHTML='<p class="card">⏳ Recherche de la course…</p>';
+    $('#jCode').value=fmtCode(code);$('#jConfirm').hidden=true;this.appBtn(code);$('#jInfo').innerHTML='<p class="card">⏳ Recherche de la course…</p>';
     if(this.link){this.link.close();this.link=null}
     let link=null;try{link=await RaceLink.connect(code)}catch(e){}
     if(current!=='join'){if(link)link.close();return}

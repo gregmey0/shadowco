@@ -6,8 +6,17 @@ try{history.replaceState({s:'home'},'')}catch(e){}
 if(!NATIVE&&'serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 const joinHash=()=>{const m=/^#join-([0-9A-Za-z-]+)/.exec(location.hash);if(!m)return null;try{history.replaceState({s:'home'},'',location.pathname+location.search)}catch(e){}return m[1]};
 window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)});
+/* application Android ouverte par un lien shadowco://join-CODE (bouton de la page web) */
+const linkCode=u=>{const c=normCode(u||'');return validCode(c)?c:null};
+function openFromLink(c){
+  if(current==='run'&&!Run.ended){toast('Termine d\'abord ta course en cours.',true);return}
+  if(current==='follow'&&Follow.on){toast('Un suivi est déjà en cours.',true);return}
+  Join.open(c);
+}
+if(NATIVE&&P.app){try{P.app.addListener('appUrlOpen',e=>{const c=linkCode(e&&e.url);if(c)openFromLink(c)})}catch(e){}}
 (async()=>{
   const c=joinHash();if(c){Join.open(c);return}
+  if(NATIVE&&P.app){try{const r=await P.app.getLaunchUrl();const lc=r&&linkCode(r.url);if(lc){openFromLink(lc);return}}catch(e){}}
   if(store.get(K.follow,null)){Follow.resume();return}
   const act=store.get(K.active,null);
   if(act&&(act.status==='running'||act.status==='waiting')){
@@ -20,4 +29,4 @@ window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)})
     if(v){Create.draft=dr;Create.open()}
   }
 })();
-window.ShadowCO={GPS,Run,Org,Replay,Follow,TrainSetup,trackDist,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
+window.ShadowCO={GPS,Run,Org,Replay,Follow,TrainSetup,trackDist,appIntent,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};

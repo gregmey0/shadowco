@@ -1047,6 +1047,8 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
     <label>Code (donné par l'organisateur ou l'encadrant)
       <input type="text" id="jCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="HK7-Q4M-ZP2D" maxlength="16"></label>
     <div class="row"><button type="button" class="primary" id="jLookup">🔎 Chercher</button><button type="button" id="jScan" hidden>📷 Scanner le QR</button></div>
+    <button type="button" class="ok big" id="jApp" hidden>📱 Ouvrir dans l'application</button>
+    <p class="hint" id="jAppNo" hidden>L'application n'est pas installée sur ce téléphone : tu peux continuer ici, dans le navigateur (écran allumé), ou <a href="https://github.com/gregmey0/shadowco/releases/latest/download/ShadowCO.apk">installer l'application</a>.</p>
     <video id="jVideo" playsinline muted hidden></video>
     <div id="jInfo"></div>
     <div id="jConfirm" class="card" hidden>
@@ -3493,10 +3495,11 @@ var qrcode = function() {
 </script>
 <script>'use strict';
 (function(){
-const VERSION='1.2.0';
+const VERSION='1.2.1';
 const CAP=window.capacitorExports||null;
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
-const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications')}:{};
+const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications'),app:CAP.registerPlugin('App')}:{};
+const ANDROID=/Android/i.test(navigator.userAgent);
 const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
 document.documentElement.classList.add(NATIVE?'native':'web');if(IOS)document.documentElement.classList.add('ios');
@@ -4413,6 +4416,10 @@ const BROKERS={H:'wss://broker.hivemq.com:8884/mqtt',E:'wss://broker.emqx.io:808
 (()=>{const t=store.get('shco.testbroker',null);if(t)BROKERS.T=t})();
 const CODE_ABC='23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const WEB_URL='https://gregmey0.github.io/shadowco/';
+/* ouverture de l'application Android depuis la page web (QR code scanné avec l'appareil photo) */
+const APP={name:'Shadow CO',scheme:'shadowco',pkg:'org.shadowco.app',apk:'https://github.com/gregmey0/shadowco/releases/latest/download/ShadowCO.apk'};
+function appIntent(code){const fb=location.origin+location.pathname+'?noapp=1#join-'+code;
+  return`intent://join-${code}#Intent;scheme=${APP.scheme};package=${APP.pkg};S.browser_fallback_url=${encodeURIComponent(fb)};end`}
 function newCode(b){const r=crypto.getRandomValues(new Uint8Array(9));return b+[...r].map(x=>CODE_ABC[x%CODE_ABC.length]).join('')}
 function normCode(s){const m=/join-([0-9A-Z-]+)/i.exec(String(s||''));return(m?m[1]:String(s||'')).toUpperCase().replace(/[^0-9A-Z]/g,'')}
 function validCode(c){return c.length===10&&!!BROKERS[c[0]]&&[...c.slice(1)].every(ch=>CODE_ABC.includes(ch))}
@@ -4506,15 +4513,21 @@ const RaceLink={
 /* ---------------- Rejoindre une course ---------------- */
 const Join={link:null,stream:null,
   open(code){
-    show('join');$('#jCode').value=code?fmtCode(normCode(code)):'';$('#jName').value=store.get(K.me,'');
+    show('join');this.appBtn(code);$('#jCode').value=code?fmtCode(normCode(code)):'';$('#jName').value=store.get(K.me,'');
     $('#jInfo').innerHTML='';$('#jConfirm').hidden=true;$('#jScan').hidden=!('BarcodeDetector' in window&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     if(code)this.lookup();
+  },
+  /* page web sur Android : proposer d'ouvrir l'application (suivi téléphone verrouillé) */
+  appBtn(code){
+    const c=normCode(code||''),noapp=/[?&]noapp=1/.test(location.search),ok=!NATIVE&&ANDROID&&validCode(c);
+    $('#jApp').hidden=!ok||noapp;$('#jAppNo').hidden=!ok||!noapp;
+    if(ok)$('#jApp').onclick=()=>{location.href=appIntent(c)};
   },
   leave(){this.stopScan();if(this.link){this.link.close();this.link=null}},
   async lookup(){
     const code=normCode($('#jCode').value);
     if(!validCode(code)){toast('Code invalide : 10 caractères, par exemple HK7-Q4M-ZP2D',true);return}
-    $('#jCode').value=fmtCode(code);$('#jConfirm').hidden=true;$('#jInfo').innerHTML='<p class="card">⏳ Recherche de la course…</p>';
+    $('#jCode').value=fmtCode(code);$('#jConfirm').hidden=true;this.appBtn(code);$('#jInfo').innerHTML='<p class="card">⏳ Recherche de la course…</p>';
     if(this.link){this.link.close();this.link=null}
     let link=null;try{link=await RaceLink.connect(code)}catch(e){}
     if(current!=='join'){if(link)link.close();return}
@@ -4677,6 +4690,8 @@ $('#hTrain').onclick=()=>TrainSetup.open();
 $('#osCreate').onclick=()=>OrgSetup.create();
 
 /* ---------------- Organiser : suivi en direct ---------------- */
+/* coureurs O'Guide : 👂 non-voyant, 👁 malvoyant */
+const profIcon=st=>st.og==='blind'?' 👂':st.og==='low'?' 👁':'';
 const PALETTE=['#E6194B','#3CB44B','#4363D8','#F58231','#911EB4','#42D4F4','#F032E6','#9A6324','#000075','#808000','#469990','#DC143C','#2E8B57','#8B008B','#FF4500','#1E90FF'];
 const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runners:{},trails:{},tracks:{},tickI:null,focus:null,lastSave:0,
   statusLabel(s,kind){return(kind==='train'?{open:'en cours',closed:'terminée',deleted:'archivée'}:{open:'inscriptions ouvertes',started:'en cours',closed:'close',deleted:'archivée'})[s]||s},
@@ -4774,7 +4789,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     $('#orgList').innerHTML=rk.length?rk.map(({st,i},k)=>{
       const col=this.color(st.pid),lastTxt=i.last?(i.last.p.type==='finish'?'arrivée':i.last.p.type==='start'?'départ':'poste '+shortLabel(o.course.points,o.course.points.indexOf(i.last.p)))+' à '+fmtTime(i.last.el):'—';
       const alerts=(i.stale?`<span class="al">📡 sans nouvelles depuis ${fmtTime(i.age)}</span>`:'')+(i.immobile?'<span class="al">⚠ immobile depuis 4 min</span>':'')+(i.manual?'<span class="al soft">validation manuelle</span>':'');
-      return`<li><button type="button" class="runner${this.focus===st.pid?' sel':''}" data-pid="${st.pid}"><span class="dot" style="background:${col}">${k+1}</span><span class="rn"><b>${esc(st.name)}</b><small>${this.stLabel(st,i)} · ${sc?`${st.net||0} pts · `:''}${i.done}/${i.n} postes · dernier : ${lastTxt}</small>${alerts?`<small>${alerts}</small>`:''}</span><span class="rt">${i.el!=null?fmtTime(i.el):'—'}<small>${st.bat!=null?'🔋'+st.bat+'%':''}${st.app==='android'?' 🤖':''}</small></span></button></li>`}).join('')
+      return`<li><button type="button" class="runner${this.focus===st.pid?' sel':''}" data-pid="${st.pid}"><span class="dot" style="background:${col}">${k+1}</span><span class="rn"><b>${esc(st.name)}</b><small>${this.stLabel(st,i)} · ${sc?`${st.net||0} pts · `:''}${i.done}/${i.n} postes · dernier : ${lastTxt}</small>${alerts?`<small>${alerts}</small>`:''}</span><span class="rt">${i.el!=null?fmtTime(i.el):'—'}<small>${st.bat!=null?'🔋'+st.bat+'%':''}${st.app==='android'?' 🤖':''}${profIcon(st)}</small></span></button></li>`}).join('')
       :`<li class="hint">Personne n'a encore rejoint la course. Montre le QR code ou donne le code <b>${fmtCode(o.code)}</b>.</li>`;
     this.drawRunners();
   },
@@ -4784,7 +4799,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     $('#orgList').innerHTML=rk.length?rk.map(({st,i})=>{
       const col=this.color(st.pid),ini=st.name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const alerts=(i.stale?`<span class="al">📡 sans nouvelles depuis ${fmtTime(i.age)}</span>`:'')+(i.immobile?'<span class="al">⚠ immobile depuis 4 min</span>':'');
-      return`<li><button type="button" class="runner${this.focus===st.pid?' sel':''}" data-pid="${st.pid}"><span class="dot" style="background:${col}">${esc(ini)}</span><span class="rn"><b>${esc(st.name)}</b><small>${this.stLabel(st,i)} · ${fmtDist(i.dist)} · ${this.speedTxt(i)}</small>${alerts?`<small>${alerts}</small>`:''}</span><span class="rt">${i.el!=null?fmtTime(i.el):'—'}<small>${st.bat!=null?'🔋'+st.bat+'%':''}${st.app==='android'?' 🤖':''}</small></span></button></li>`}).join('')
+      return`<li><button type="button" class="runner${this.focus===st.pid?' sel':''}" data-pid="${st.pid}"><span class="dot" style="background:${col}">${esc(ini)}</span><span class="rn"><b>${esc(st.name)}</b><small>${this.stLabel(st,i)} · ${fmtDist(i.dist)} · ${this.speedTxt(i)}</small>${alerts?`<small>${alerts}</small>`:''}</span><span class="rt">${i.el!=null?fmtTime(i.el):'—'}<small>${st.bat!=null?'🔋'+st.bat+'%':''}${st.app==='android'?' 🤖':''}${profIcon(st)}</small></span></button></li>`}).join('')
       :`<li class="hint">Personne n'a encore rejoint la séance. Montre le QR code ou donne le code <b>${fmtCode(o.code)}</b>.</li>`;
     this.drawRunners();
   },
@@ -4816,7 +4831,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     const rows=(st.visited||[]).map(v=>{const p=c.points.find(q=>q.id===v.id);if(!p)return'';const lbl=p.type==='start'?'▲ Départ':p.type==='finish'?'🏁 Arrivée':'Poste '+shortLabel(c.points,c.points.indexOf(p));
       return`<tr><td>${lbl}${v.m==='manual'?' <span class="tag manual">manuel</span>':''}</td><td class="num">${p.type==='start'?'–':fmtTime(v.leg)}</td><td class="num">${fmtTime(v.el)}</td>${sc?`<td class="num">${p.type==='control'?ptsOf(p):''}</td>`:''}</tr>`}).join('');
     const box=document.createElement('div');
-    box.innerHTML=`<p><b>${esc(st.name)}</b> · ${this.stLabel(st,i)}</p><p class="hint">${i.done}/${i.n} postes${sc?` · ${st.score||0} pts − ${st.pen||0} = <b>${st.net||0}</b>`:''}${i.el!=null?' · '+fmtTime(i.el):''}${st.pos?` · position il y a ${fmtTime(Date.now()-st.pos.t)}`:''}</p>
+    box.innerHTML=`<p><b>${esc(st.name)}</b>${profIcon(st)} · ${this.stLabel(st,i)}</p><p class="hint">${i.done}/${i.n} postes${sc?` · ${st.score||0} pts − ${st.pen||0} = <b>${st.net||0}</b>`:''}${i.el!=null?' · '+fmtTime(i.el):''}${st.pos?` · position il y a ${fmtTime(Date.now()-st.pos.t)}`:''}</p>
       <table class="res"><thead><tr><th>Poste</th><th class="num">Inter.</th><th class="num">Cumul</th>${sc?'<th class="num">Pts</th>':''}</tr></thead><tbody>${rows||'<tr><td colspan="4">Aucun poste validé</td></tr>'}</tbody></table>`;
     Sheet.show('Coureur',box);
   },
@@ -4859,7 +4874,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
       box.querySelector('tbody').addEventListener('click',e=>{const tr=e.target.closest('[data-pid]');if(tr){Sheet.hide();this.select(tr.dataset.pid)}});
       $('#rkCsv').onclick=()=>this.exportCSV();$('#rkGpx').onclick=()=>this.exportGPX();return}
     const sc=this.o.course.mode==='score',rk=this.ranking(),box=document.createElement('div');
-    box.innerHTML=`<table class="res"><thead><tr><th>#</th><th>Nom</th><th class="num">${sc?'Points':'Postes'}</th><th class="num">Temps</th></tr></thead><tbody>${rk.map(({st,i},k)=>`<tr data-pid="${st.pid}"><td>${st.status==='finished'?k+1:'–'}</td><td>${esc(st.name)}<br><small class="muted">${this.stLabel(st,i)}</small></td><td class="num">${sc?(st.net||0):i.done+'/'+i.n}</td><td class="num">${i.el!=null?fmtTime(i.el):'—'}</td></tr>`).join('')||'<tr><td colspan="4">Aucun coureur</td></tr>'}</tbody></table>
+    box.innerHTML=`<table class="res"><thead><tr><th>#</th><th>Nom</th><th class="num">${sc?'Points':'Postes'}</th><th class="num">Temps</th></tr></thead><tbody>${rk.map(({st,i},k)=>`<tr data-pid="${st.pid}"><td>${st.status==='finished'?k+1:'–'}</td><td>${esc(st.name)}${profIcon(st)}<br><small class="muted">${this.stLabel(st,i)}</small></td><td class="num">${sc?(st.net||0):i.done+'/'+i.n}</td><td class="num">${i.el!=null?fmtTime(i.el):'—'}</td></tr>`).join('')||'<tr><td colspan="4">Aucun coureur</td></tr>'}</tbody></table>
       <div class="row" style="margin-top:1rem"><button type="button" id="rkCsv">⬇ Résultats CSV (tableur)</button></div>`;
     Sheet.show('Classement',box);
     box.querySelector('tbody').addEventListener('click',e=>{const tr=e.target.closest('[data-pid]');if(tr){Sheet.hide();this.select(tr.dataset.pid)}});
@@ -4960,8 +4975,17 @@ try{history.replaceState({s:'home'},'')}catch(e){}
 if(!NATIVE&&'serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
 const joinHash=()=>{const m=/^#join-([0-9A-Za-z-]+)/.exec(location.hash);if(!m)return null;try{history.replaceState({s:'home'},'',location.pathname+location.search)}catch(e){}return m[1]};
 window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)});
+/* application Android ouverte par un lien shadowco://join-CODE (bouton de la page web) */
+const linkCode=u=>{const c=normCode(u||'');return validCode(c)?c:null};
+function openFromLink(c){
+  if(current==='run'&&!Run.ended){toast('Termine d\'abord ta course en cours.',true);return}
+  if(current==='follow'&&Follow.on){toast('Un suivi est déjà en cours.',true);return}
+  Join.open(c);
+}
+if(NATIVE&&P.app){try{P.app.addListener('appUrlOpen',e=>{const c=linkCode(e&&e.url);if(c)openFromLink(c)})}catch(e){}}
 (async()=>{
   const c=joinHash();if(c){Join.open(c);return}
+  if(NATIVE&&P.app){try{const r=await P.app.getLaunchUrl();const lc=r&&linkCode(r.url);if(lc){openFromLink(lc);return}}catch(e){}}
   if(store.get(K.follow,null)){Follow.resume();return}
   const act=store.get(K.active,null);
   if(act&&(act.status==='running'||act.status==='waiting')){
@@ -4974,7 +4998,7 @@ window.addEventListener('hashchange',()=>{const c=joinHash();if(c)Join.open(c)})
     if(v){Create.draft=dr;Create.open()}
   }
 })();
-window.ShadowCO={GPS,Run,Org,Replay,Follow,TrainSetup,trackDist,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
+window.ShadowCO={GPS,Run,Org,Replay,Follow,TrainSetup,trackDist,appIntent,encTrack,decTrack,Join,RaceLink,Mqtt,deriveRace,seal,unseal,newCode,normCode,validCode,fmtCode,parseGPX,courseToGPX,Lib,Results,get courses(){return courses},settings:()=>settings,store,K};
 
 })();</script>
 </body>
