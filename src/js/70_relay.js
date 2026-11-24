@@ -7,8 +7,8 @@ const CODE_ABC='23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const WEB_URL='https://gregmey0.github.io/shadowco/';
 /* ouverture de l'application Android depuis la page web (QR code scanné avec l'appareil photo) */
 const APP={name:'Shadow CO',scheme:'shadowco',pkg:'org.shadowco.app',apk:'https://github.com/gregmey0/shadowco/releases/latest/download/ShadowCO.apk'};
-function appIntent(code){const fb=location.origin+location.pathname+'?noapp=1#join-'+code;
-  return`intent://join-${code}#Intent;scheme=${APP.scheme};package=${APP.pkg};S.browser_fallback_url=${encodeURIComponent(fb)};end`}
+function appIntent(code,kind,token){const h=kind==='orga'?`orga-${code}.${token}`:'join-'+code,fb=location.origin+location.pathname+'?noapp=1#'+h;
+  return`intent://${h}#Intent;scheme=${APP.scheme};package=${APP.pkg};S.browser_fallback_url=${encodeURIComponent(fb)};end`}
 function newCode(b){const r=crypto.getRandomValues(new Uint8Array(9));return b+[...r].map(x=>CODE_ABC[x%CODE_ABC.length]).join('')}
 function normCode(s){const m=/join-([0-9A-Z-]+)/i.exec(String(s||''));return(m?m[1]:String(s||'')).toUpperCase().replace(/[^0-9A-Z]/g,'')}
 function validCode(c){return c.length===10&&!!BROKERS[c[0]]&&[...c.slice(1)].every(ch=>CODE_ABC.includes(ch))}
@@ -84,10 +84,13 @@ const RaceLink={
     const link={code,key,base,m,race:null,connected:false,onRace:null,ownedByRun:true,
       publishState(st){seal(key,Object.assign({v:1,type:'p'},st)).then(b=>m.publish(base+'/p/'+st.pid,b,true))},
       publishTrack(pid,name,e){seal(key,Object.assign({v:1,type:'t',pid,name},e)).then(b=>m.publish(base+'/t/'+pid,b,true))},
+      publishMsgs(pid,list){seal(key,{v:1,type:'m',pid,list}).then(b=>m.publish(base+'/m/'+pid,b,true))},
+      onOrgMsgs:null,listenOrg(){if(this._lo)return;this._lo=1;m.subscribe(base+'/mo/+')},
       close(){m.close()}};
     let waiter=null;
     m.onstate=c=>{link.connected=c;if(current==='run')Run.render();if(current==='follow')Follow.render()};
     m.onMessage(async(topic,pl)=>{
+      if(topic.startsWith(base+'/mo/')){if(!pl.length||!link.onOrgMsgs)return;try{const d=await unseal(key,pl);if(d&&d.list)link.onOrgMsgs(d.list)}catch(e){}return}
       if(topic!==base+'/race')return;
       if(!pl.length){link.race={status:'deleted'};if(link.onRace)link.onRace(link.race);if(waiter)waiter(link.race);return}
       try{const r=await unseal(key,pl);link.race=r;if(link.onRace)link.onRace(r);if(waiter){waiter(r);waiter=null}}catch(e){}

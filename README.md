@@ -8,6 +8,10 @@ Application de course d'orientation pour coureurs voyants, avec suivi en direct 
 - **Organisation en direct** : code + QR code pour rejoindre, départ groupé ou individuel, carte de tous les coureurs avec leur trace, postes, temps, batterie, alertes (immobile, sans nouvelles), classement et export CSV.
 - **Replay** : l'organisateur rejoue la course (curseur de temps, vitesse ×10 à ×120, postes validés au fil du temps). Les traces restent sur son appareil, même après effacement du relais.
 - **Suivi d'entraînement** (enseignant, entraîneur) : une séance sans parcours. Les pratiquants rejoignent avec le code ou le QR code et rangent leur téléphone ; l'encadrant suit tout le monde sur la carte en direct (trace, distance, vitesse moyenne, batterie, alertes), puis en replay. Bilan CSV et traces GPX.
+- **Messages et SOS discrets** : un petit bouton 💬 pendant la course ou le suivi. Le coureur écrit aux organisateurs (messages rapides : tout va bien, perdu, retard, j'arrête, ma position) ou lance une alerte 🆘 avec sa position ; l'organisateur répond à tous ou à une personne, prend en charge l'alerte (« J'arrive ») et voit qui s'en occupe. Messages lus à voix haute et notification sur Android.
+- **Vitesses et distances** : l'organisateur voit pour chacun la distance parcourue, la vitesse actuelle et la vitesse moyenne ; la fiche du coureur, le replay et l'export CSV « par tronçon » donnent le temps, la distance et la vitesse entre chaque poste.
+- **Arrêts manuels signalés** : alerte à l'organisateur quand un coureur abandonne, termine son parcours lui-même ou arrête son suivi.
+- **Plusieurs organisateurs** : lien ou QR code organisateur (menu ⋯ › Organisateurs) ; chaque organisateur a le même tableau de bord (départ, messages, clôture), les changements sont partagés. Fond de carte modifiable sur la carte de suivi (🗂).
 - **Échange** des parcours en GPX (compatible O'Guide).
 - **Impression** : carte du parcours en A4 (PDF ou image PNG) avec surimpression CO, fond au choix, échelle, nord et description des postes ; symboles grands pour malvoyants.
 

@@ -12,7 +12,7 @@ function makeMap(el,kind){const m=L.map(el,{zoomControl:true,attributionControl:
 function setMapStyle(m){
   const c=m.getContainer();c.classList.remove('ct-normal','ct-high','ct-invert');
   if(m._base){m.removeLayer(m._base);m._base=null}
-  const ly=LAYERS[settings.layer]||LAYERS.osm;m._base=L.tileLayer(ly.url,ly.o).addTo(m);
+  const ly=LAYERS[(m._kind==='org'&&settings.orgLayer)||settings.layer]||LAYERS.osm;m._base=L.tileLayer(ly.url,ly.o).addTo(m);
   c.classList.add('ct-'+settings.contrast);
 }
 /* symboles de course d'orientation ; state : '' | 'next' (poste à chercher) | 'done' (validé) */

@@ -220,3 +220,41 @@ input[type=number]{font:inherit;min-height:52px;padding:.4rem .7rem;border-radiu
 .prt .row label{flex:1;min-width:0}
 .prprev{display:block;width:100%;max-width:520px;margin:.6rem auto;border:2px solid #888;background:#fff;min-height:120px}
 #dtPrint{width:100%}
+/* messagerie discrète, SOS, vitesses */
+.pmsgBtn,#orgMsg{position:relative}
+#run .pmsgBtn{min-height:46px;min-width:46px;padding:0;font-size:1.25rem;border-width:2px}
+.badge{position:absolute;top:-6px;right:-6px;background:var(--bad);color:#fff;font-size:.72rem;font-weight:700;min-width:22px;height:22px;line-height:18px;border-radius:11px;padding:0 5px;border:2px solid #000}
+.pmsgBtn.sos{border-color:var(--bad);color:var(--bad)}
+.sosbar{background:#3a0000;border:2px solid var(--bad);color:#fff;border-radius:12px;margin:.3rem .5rem;padding:.4rem .6rem;font-size:.92rem;display:flex;flex-direction:column;gap:.35rem}
+.sosbar[hidden]{display:none}
+.sosbar a.mini{color:#fff;font-weight:700;text-decoration:none;border:2px solid #fff;border-radius:10px;padding:.35rem .6rem;display:inline-block}
+.sosrow{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;justify-content:space-between}
+.sosbtns{display:flex;gap:.35rem}
+.al.sos{color:#fff;background:var(--bad);padding:0 .35rem;border-radius:6px}
+.rmk.sos span{box-shadow:0 0 0 4px var(--bad),0 0 0 7px #000;animation:sos 1s ease-in-out infinite}
+@keyframes sos{50%{transform:scale(1.25)}}
+@media (prefers-reduced-motion:reduce){.rmk.sos span{animation:none}}
+.runner .rn small.mv{color:#cfe8ff}
+p.mv{color:#cfe8ff}
+.chatbox{display:flex;flex-direction:column;gap:.5rem;min-height:60vh}
+ul.chat{flex:1;list-style:none;margin:0;padding:.3rem;display:flex;flex-direction:column;gap:.45rem;max-height:46vh;min-height:30vh;overflow:auto;border:1px solid #333;border-radius:12px;-webkit-overflow-scrolling:touch}
+ul.chat .day{text-align:center;color:var(--muted);font-size:.8rem;margin:.3rem 0}
+ul.chat .sys{text-align:center;color:var(--warn);font-size:.85rem}
+.msg{max-width:88%;align-self:flex-start;background:var(--panel);border:2px solid #333;border-radius:14px 14px 14px 4px;padding:.35rem .55rem;display:flex;flex-direction:column;gap:.15rem}
+.msg.mine{align-self:flex-end;border-color:#14505c;background:#06262c;border-radius:14px 14px 4px 14px}
+.msg.sos{border-color:var(--bad);background:#3a0000}
+.msg .mh{display:flex;align-items:center;gap:.35rem;font-size:.82rem;flex-wrap:wrap}
+.msg .mh .dot{width:22px;height:22px;border-radius:50%;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;border:1px solid #fff}
+.msg .mh time{margin-left:auto;color:var(--muted);font-size:.75rem;padding-left:.5rem}
+.msg p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:1rem}
+.chatquick{display:flex;flex-wrap:wrap;gap:.35rem}
+.chatquick button{min-height:44px;padding:0 .7rem;font-size:.88rem;border-radius:999px;border-width:2px}
+.chatform{display:flex;gap:.4rem}
+.chatform input{flex:1;min-width:0}
+.chatto{display:flex;align-items:center;gap:.5rem;font-weight:700}
+.chatto select{flex:1;min-width:0}
+.olist{list-style:none;margin:0 0 .6rem;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.olist li{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem}
+.layerpick{display:flex;flex-direction:column;gap:.5rem}
+.follow .pmsgBtn{min-height:52px}
+#modal{z-index:4000}#toast{z-index:4100}

@@ -41,7 +41,7 @@ const Home={deferred:null,
     let h='';
     const fw=store.get(K.follow,null);if(fw)h+=`<button class="primary" id="hFollow">📍 Suivi en cours : ${esc(fw.sname||'')}</button>`;
     if(act&&(act.status==='waiting'||act.status==='running'))h+=`<button class="primary" id="hResume">⏯ Reprendre ma course : ${esc(act.courseName)}</button>`;
-    if(orgs.length)h+=`<section class="card"><h2>Courses et séances organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>${o.kind==='train'?'📍':'📡'} ${esc(o.name)}</span><span class="muted">${Org.statusLabel(o.status,o.kind)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
+    if(orgs.length)h+=`<section class="card"><h2>Courses et séances organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>${o.kind==='train'?'📍':'📡'} ${esc(o.name)}</span><span class="muted">${o.coorg?'👥 ':''}${Org.statusLabel(o.status,o.kind)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
     $('#homeExtra').innerHTML=h;
     const r=$('#hResume');if(r)r.onclick=()=>Run.resumeActive();
     const hf=$('#hFollow');if(hf)hf.onclick=()=>Follow.resume();

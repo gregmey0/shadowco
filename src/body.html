@@ -115,8 +115,9 @@
 <!-- COURSE (COUREUR) -->
 <section id="run" class="screen">
   <div class="run-top">
-    <span id="runChrono">⏱ 0:00</span><span id="runProg"></span><span id="runNet" hidden>📡</span><button type="button" id="runOpts" aria-label="Réglages">⚙</button>
+    <span id="runChrono">⏱ 0:00</span><span id="runProg"></span><span id="runNet" hidden>📡</span><button type="button" class="pmsgBtn" aria-label="Messages aux organisateurs" hidden>💬<span class="pmsgBadge badge" hidden></span></button><button type="button" id="runOpts" aria-label="Réglages">⚙</button>
   </div>
+  <div id="runSos" class="sosbar" role="status" hidden></div>
   <div id="runInfo" class="run-info"></div>
   <div id="runMapWrap">
     <div id="runMap"></div>
@@ -195,13 +196,15 @@
   <div class="orgbar" id="orgbarLive">
     <span id="orgStatus" class="tag"></span>
     <button type="button" id="orgQR">🔗 Code / QR</button>
+    <button type="button" id="orgMsg" aria-label="Messages">💬<span id="orgMsgBadge" class="badge" hidden></span></button>
     <button type="button" class="primary" id="orgLaunch" hidden>▶ Lancer le départ</button>
     <button type="button" id="orgRank">📊 Classement</button>
     <button type="button" id="orgReplayBtn">⏯ Replay</button>
     <button type="button" class="danger" id="orgClose">🏁 Clore</button>
     <button type="button" id="orgMore" aria-label="Plus d'options">⋯</button>
   </div>
-  <div class="orgmapwrap"><div id="orgMap" class="map"></div><div class="mapbtns"><button type="button" id="orgFit" aria-label="Voir tout le monde">🗺</button></div></div>
+  <div id="orgSos" class="sosbar" role="alert" hidden></div>
+  <div class="orgmapwrap"><div id="orgMap" class="map"></div><div class="mapbtns"><button type="button" id="orgLayer" aria-label="Fond de carte">🗂</button><button type="button" id="orgFit" aria-label="Voir tout le monde">🗺</button></div></div>
   <div id="orgReplay" class="replay" hidden>
     <div class="rp-ctl"><button type="button" class="primary" id="rpPlay" aria-label="Lecture / pause">▶</button><input type="range" id="rpSlider" min="0" max="1000" value="0" aria-label="Moment de la course"><select id="rpSpeed" aria-label="Vitesse"><option value="10">×10</option><option value="30" selected>×30</option><option value="60">×60</option><option value="120">×120</option></select></div>
     <p id="rpTime" class="center"></p>
@@ -222,6 +225,8 @@
     <p class="fw-name" id="fwName"></p>
     <p id="fwState" class="fw-state"></p>
     <p class="hint" id="fwHint">Rien à faire : range le téléphone dans la poche ou le sac.<span class="web-only"> Sur navigateur, garde l'écran allumé (le verrouiller coupe le suivi).</span></p>
+    <div id="fwSos" class="sosbar" role="status" hidden></div>
+    <button type="button" class="pmsgBtn" hidden>💬 Messages aux organisateurs<span class="pmsgBadge badge" hidden></span></button>
     <button type="button" class="hold danger big" id="fwStop">⏹ Arrêter le suivi<small>appui long</small></button>
     <button type="button" class="big" id="fwHome" data-go="home" hidden>Retour à l'accueil</button>
   </main>

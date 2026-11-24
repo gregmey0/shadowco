@@ -41,8 +41,11 @@ const Run={map:null,lay:null,meLay:null,ended:true,
       opts:Object.assign({startType:'individual',beep:true,radius:settings.radius},a.opts||{}),link:a.race||null,name:a.name||'',
       pid:st.pid||uid(),startAt:st.startAt||null,finishAt:st.finishAt||null,visited:st.visited||[],status:st.status||'waiting',track:st.track||[],
       id:st.id||uid(),date:st.date||new Date().toISOString(),race:st.race||(a.race?{code:a.race.code}:null),
-      ended:false,hidNoted:st.status==='running',inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false});
+      ended:false,hidNoted:st.status==='running',inside:{},warned:{},nextBeep:0,lastPub:0,lastSave:0,warnedLimit:false,warned5:false,
+      dist:st.dist||0,dlast:null,sm:new SpeedMeter(),endBy:null});
+    {const lt=this.status==='running'&&this.track[this.track.length-1];if(lt)this.dlast={lat:lt[0],lon:lt[1],t:lt[2]}}
     if(this.link)this.link.onRace=r=>this.onRace(r);
+    if(this.kind==='race'&&this.link)PMsg.start({link:this.link,pid:this.pid,name:this.name||'Coureur',saved:st.msg,onChange:()=>{this.save();this.publish(true)}});else PMsg.stop();
     if(this.status==='waiting'&&this.opts.startType==='individual'&&!this.startPt()&&a.kind==='solo')this.go();
     show('run');
     $('#runFinish').hidden=this.mode==='ordered';
@@ -87,6 +90,8 @@ const Run={map:null,lay:null,meLay:null,ended:true,
   onFix(f){
     if(this.ended)return;
     if(f.acc<=30){const tr=this.track,l=tr[tr.length-1];if(!l||dist({lat:l[0],lon:l[1]},f)>=5)tr.push([+f.lat.toFixed(6),+f.lon.toFixed(6),Date.now()])}
+    if(this.status==='running'&&f.acc<=30){const p={lat:f.lat,lon:f.lon,t:Date.now()},l=this.dlast;
+      if(!l)this.dlast=p;else{const d=dist(l,p);if(d>=5){if(d/Math.max(1,(p.t-l.t)/1000)<20)this.dist+=d;this.dlast=p}}this.sm.add(f)}
     this.updateMe();
     const T=this.targets(),now=Date.now(),R=this.opts.radius||settings.radius,acc=f.acc<=Math.max(30,R*3);
     let best=null;T.forEach(p=>{const d=dist(f,p);if(d<=R&&(!best||d<best.d))best={p,d}});
@@ -103,10 +108,10 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(this.ended)return;
     const now=Date.now(),n=shortLabel(this.pts,this.pts.indexOf(p));
     if(p.type==='start'&&this.status==='waiting'){this.startAt=now;this.status='running';
-      this.visited.push({id:p.id,n:'D',name:p.name,type:'start',t:now,el:0,leg:0,m:mode});Snd.fanfare();vib([200,100,200]);this.say('Départ ! Chrono lancé.');toast('▲ Départ : chrono lancé');this.afterChange();return}
+      this.dist=0;this.dlast=null;this.visited.push({id:p.id,n:'D',name:p.name,type:'start',t:now,el:0,leg:0,m:mode,d:0});Snd.fanfare();vib([200,100,200]);this.say('Départ ! Chrono lancé.');toast('▲ Départ : chrono lancé');this.afterChange();return}
     if(this.isVisited(p.id))return;
     const el=this.elapsed(),prev=this.visited.length?this.visited[this.visited.length-1].el:0;
-    const v={id:p.id,n,name:p.name,type:p.type,t:now,el,leg:el-prev,m:mode,pts:p.type==='control'?ptsOf(p):0};this.visited.push(v);
+    const v={id:p.id,n,name:p.name,type:p.type,t:now,el,leg:el-prev,m:mode,pts:p.type==='control'?ptsOf(p):0,d:Math.round(this.dist)};this.visited.push(v);
     if(p.type==='finish'){this.finish('finished');return}
     Snd.chime();vib([150,80,150]);
     const sc=this.mode==='score'?` · +${v.pts} pts`:'';
@@ -130,26 +135,26 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     const miss=this.missing();
     const body=this.mode==='free'&&miss?`<p>Il manque <b>${miss}</b> poste${miss>1?'s':''} : ils seront comptés manquants.</p>`:this.mode==='score'?`<p>Score actuel : ${this.scoreInfo().net} points.</p>`:'';
     const v=await modal({title:'Terminer la course maintenant ?',body,buttons:[{label:'🏁 Terminer',value:true,primary:true},{label:'Continuer',value:false}]});
-    if(v&&!this.ended)this.finish('finished');
+    if(v&&!this.ended)this.finish('finished','runner');
   },
   async askQuit(){
     if(this.ended){show('home');return}
     const v=await modal({title:'Quitter la course ?',body:'<p>Tu peux abandonner, ou continuer à courir.</p>',buttons:[{label:'Continuer la course',value:false,primary:true},{label:'✖ Abandonner',value:true,danger:true}]});
-    if(v&&!this.ended)this.finish('abandoned');
+    if(v&&!this.ended)this.finish('abandoned','runner');
   },
-  finish(status){
+  finish(status,by){
     if(this.ended)return;
-    this.ended=true;this.status=status;if(!this.finishAt)this.finishAt=this.startAt?Date.now():null;
+    this.ended=true;this.status=status;this.endBy=by||null;if(!this.finishAt)this.finishAt=this.startAt?Date.now():null;
     clearInterval(this.tickI);clearInterval(this.beepI);if(this.unsub)this.unsub();this.unsub=null;
     const si=this.scoreInfo(),tot=this.elapsed();
     if(status==='finished'){Snd.fanfare();vib([300,100,300,100,600]);
       this.say(this.mode==='score'?`Arrivée ! ${si.net} points en ${spokenTime(tot)}.`:`Arrivée ! ${spokenTime(tot)}.`+(this.mode==='free'&&this.missing()?` ${this.missing()} postes manquants.`:''))}
     else this.say(status==='abandoned'?'Course abandonnée.':'Course close par l\'organisateur.');
     const r={id:this.id,courseId:this.c.id,courseName:this.c.name,name:this.name,date:this.date,kind:this.kind,mode:this.mode,status,total:tot,
-      visited:this.visited,score:si.pts,pen:si.pen,net:si.net,missing:this.missing(),nCtrls:this.ctrls().length,timeLimit:this.timeLimit,track:this.track.slice(-4000),raceCode:this.race&&this.race.code,
+      visited:this.visited,score:si.pts,pen:si.pen,net:si.net,missing:this.missing(),dist:Math.round(this.dist),endBy:this.endBy||undefined,nCtrls:this.ctrls().length,timeLimit:this.timeLimit,track:this.track.slice(-4000),raceCode:this.race&&this.race.code,
       points:this.kind==='race'?this.c.points.map(p=>({id:p.id,lat:p.lat,lon:p.lon})):undefined};
     results.push(r);saveResults();
-    this.publish(true);store.del(K.active);
+    this.publish(true);store.del(K.active);PMsg.stop();
     setTimeout(()=>{if(this.link&&this.link.ownedByRun){this.link.close();this.link=null}},4000);
     GPS.stop();Wake.off();
     setTimeout(()=>Results.show(r),status==='finished'?1800:300);
@@ -228,7 +233,8 @@ const Run={map:null,lay:null,meLay:null,ended:true,
     if(!this.link)return;const now=Date.now();if(!force&&now-this.lastPub<5000)return;this.lastPub=now;
     const f=GPS.last,si=this.scoreInfo();
     this.link.publishState({pid:this.pid,name:this.name||'Coureur',status:this.status,startAt:this.startAt,finishAt:this.finishAt,
-      visited:this.visited.map(v=>({id:v.id,el:v.el,leg:v.leg,m:v.m})),score:si.pts,pen:si.pen,net:si.net,
+      visited:this.visited.map(v=>({id:v.id,el:v.el,leg:v.leg,m:v.m,d:v.d})),score:si.pts,pen:si.pen,net:si.net,
+      dist:this.startAt?Math.round(this.dist):0,spd:this.status==='running'?this.sm.value():undefined,sos:PMsg.on&&PMsg.sosActive()||undefined,endBy:this.endBy||undefined,
       pos:f&&!f.sim?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:Math.round(f.acc),t:f.t}:f?{lat:+f.lat.toFixed(6),lon:+f.lon.toFixed(6),acc:3,t:f.t,sim:1}:null,
       bat:Battery.level,app:NATIVE?'android':'web',upd:now});
     if(force||now-(this.lastTrk||0)>60000){this.lastTrk=now;const e=encTrack(this.track.slice(-3000));if(e)this.link.publishTrack(this.pid,this.name||'Coureur',e)}
@@ -236,7 +242,7 @@ const Run={map:null,lay:null,meLay:null,ended:true,
   saveSoon(){if(Date.now()-this.lastSave>20000)this.save()},
   save(){if(this.ended)return;this.lastSave=Date.now();
     store.set(K.active,{id:this.id,kind:this.kind,course:this.c,courseName:this.c.name,courseId:this.c.id,opts:this.opts,race:this.race,name:this.name,pid:this.pid,
-      startAt:this.startAt,finishAt:this.finishAt,status:this.status,visited:this.visited,track:this.track.slice(-1500),date:this.date})},
+      startAt:this.startAt,finishAt:this.finishAt,status:this.status,visited:this.visited,track:this.track.slice(-1500),date:this.date,dist:this.dist,msg:PMsg.on?PMsg.snapshot():undefined})},
   onResumeVisible(){if(!this.ended){this.publish(true);this.render()}}
 };
 const Battery={level:null,
@@ -261,9 +267,12 @@ const Results={cur:null,
     const stTxt={finished:'',abandoned:' · <b style="color:var(--bad)">abandon</b>',closed:' · <b style="color:var(--warn)">course close par l\'organisateur</b>'}[r.status]||'';
     $('#rsHead').innerHTML=`<p><b>${esc(r.courseName)}</b>${r.name?' · '+esc(r.name):''}</p><p class="hint">${new Date(r.date).toLocaleString('fr-FR')} · ${MODES[r.mode].label}${stTxt}</p>`;
     $('#rsTotal').textContent=r.mode==='score'?`${r.net} pts`:fmtTime(r.total);
-    $('#rsSub').innerHTML=r.mode==='score'?`${r.score} points − ${r.pen} de pénalité · ${fmtTime(r.total)} (limite ${fmtTime(r.timeLimit)})`:r.mode==='free'&&r.missing?`${r.missing} poste${r.missing>1?'s':''} manquant${r.missing>1?'s':''}`:'';
+    $('#rsSub').innerHTML=(r.mode==='score'?`${r.score} points − ${r.pen} de pénalité · ${fmtTime(r.total)} (limite ${fmtTime(r.timeLimit)})`:r.mode==='free'&&r.missing?`${r.missing} poste${r.missing>1?'s':''} manquant${r.missing>1?'s':''}`:'')
+      +(r.dist?`${r.mode==='score'||(r.mode==='free'&&r.missing)?'<br>':''}📏 ${fmtDist(r.dist)}${r.total>30000?` · moy. ${kmh(r.dist/(r.total/1000))}`:''}`:'');
+    const hasD=r.visited.some(v=>v.d!=null&&v.type!=='start');let pd=0;
+    const lg=r.visited.map(v=>{if(v.d==null||v.type==='start'){if(v.d!=null)pd=v.d;return['–','–']}const ld=Math.max(0,v.d-pd);pd=v.d;return[fmtDist(ld),v.leg>5000&&ld>0?kmh(ld/(v.leg/1000)).replace(' km/h',''):'–']});
     const lab={auto:'',manual:'<span class="tag manual">manuel</span>'};
-    $('#rsTable').innerHTML=`<thead><tr><th>Poste</th><th class="num">Inter.</th><th class="num">Cumul</th>${r.mode==='score'?'<th class="num">Pts</th>':''}</tr></thead><tbody>${r.visited.map(v=>`<tr><td>${v.type==='start'?'▲ Départ':v.type==='finish'?'🏁 Arrivée':'Poste '+esc(v.n)} ${lab[v.m]||''}</td><td class="num">${v.type==='start'?'–':fmtTime(v.leg)}</td><td class="num">${fmtTime(v.el)}</td>${r.mode==='score'?`<td class="num">${v.type==='control'?v.pts:''}</td>`:''}</tr>`).join('')}</tbody>`;
+    $('#rsTable').innerHTML=`<thead><tr><th>Poste</th><th class="num">Inter.</th><th class="num">Cumul</th>${hasD?'<th class="num">Dist.</th><th class="num">km/h</th>':''}${r.mode==='score'?'<th class="num">Pts</th>':''}</tr></thead><tbody>${r.visited.map((v,k)=>`<tr><td>${v.type==='start'?'▲ Départ':v.type==='finish'?'🏁 Arrivée':'Poste '+esc(v.n)} ${lab[v.m]||''}</td><td class="num">${v.type==='start'?'–':fmtTime(v.leg)}</td><td class="num">${fmtTime(v.el)}</td>${hasD?`<td class="num">${lg[k][0]}</td><td class="num">${lg[k][1]}</td>`:''}${r.mode==='score'?`<td class="num">${v.type==='control'?v.pts:''}</td>`:''}</tr>`).join('')}</tbody>`;
     show('results');
   },
   fname(ext){const r=this.cur;return slug('shadowco_'+r.courseName+(r.name?'_'+r.name:''))+'.'+ext},
