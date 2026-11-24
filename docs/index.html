@@ -5265,7 +5265,7 @@ const Org={map:null,lay:null,runLay:null,o:null,m:null,key:null,base:null,runner
     let immobile=false;if(st.status==='running'){const recent=tr.filter(q=>now-q[2]<300000);if(recent.length>2&&now-recent[0][2]>240000){const c0={lat:recent[0][0],lon:recent[0][1]};immobile=recent.every(q=>dist(c0,{lat:q[0],lon:q[1]})<25)}}
     return{train:true,el,dist:d,speed:el>30000&&d>0?d/(el/1000):null,spd:this.curSpeed(st,age),age,stale,immobile,n:ft.length,done:0,missing:0,last:null,manual:false};
   },
-  mvTxt(i){return`📏 ${fmtDist(i.dist||0)}${i.spd!=null?` · ⚡ ${kmh(i.spd)}`:''}${i.speed?` · moy. ${kmh(i.speed)}`:''}`},
+  mvTxt(i){return`📏 ${fmtDist(i.dist||0)}${i.spd!=null?(i.spd<0.3?' · ⏸ à l\'arrêt':` · ⚡ ${kmh(i.spd)}`):''}${i.speed?` · moy. ${kmh(i.speed)}`:''}`},
   sosOn(st){return!!(st.sos&&Date.now()-st.sos<SOS_MS)},
   ackOf(pid,t){let a=null;this.omsgs.forEach(m=>{if(m.role==='o'&&m.k==='ack'&&m.to===pid&&m.t>=t)a=m.name});return a},
   sosTag(st){if(!this.sosOn(st))return'';const a=this.ackOf(st.pid,st.sos);return`<span class="al sos">🆘 demande d'aide à ${hm(st.sos)}${a?' · '+esc(a)+' s\'en occupe':''}</span>`},
