@@ -4,19 +4,52 @@
 <section id="home" class="screen active">
   <main class="home">
     <div class="brand">
-      <svg width="76" height="76" viewBox="0 0 100 100" aria-hidden="true"><rect x="18" y="18" width="72" height="72" rx="6" fill="#3a3a3a"/><rect x="10" y="10" width="72" height="72" rx="6" fill="#fff"/><polygon points="10,10 82,10 82,82" fill="#FF7A00"/><rect x="10" y="10" width="72" height="72" rx="6" fill="none" stroke="#000" stroke-width="3"/></svg>
+      <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" viewBox="12 12 84 84"><defs>
+ <linearGradient id="lgSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173F7A"/><stop offset="0.75" stop-color="#5B9BD5"/><stop offset="1" stop-color="#9CC7EA"/></linearGradient>
+ <linearGradient id="lgSlope" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4E7A45"/><stop offset="1" stop-color="#2C4F2E"/></linearGradient>
+ <linearGradient id="lgCap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.66" stop-color="#F1EEE8"/><stop offset="0.67" stop-color="#CFC9BE"/><stop offset="1" stop-color="#BDB6AA"/></linearGradient>
+</defs>
+<rect width="108" height="108" fill="url(#lgSky)"/>
+<path d="M0,72 C10,66 20,59 30,54 L44,47 L56,41 L66,37 L70,35.5 L74,36.5 L82,40 L92,45 C99,48 104,50 108,51 L108,108 L0,108 Z" fill="url(#lgSlope)"/>
+<path d="M30,54 L44,47 L56,41 L66,37 L70,35.5 L74,36.5 L82,40 L92,45 L89,47 L86,45.5 L83,48 L79,46 L76,49.5 L72,46.5 L68,50 L64,47 L60,50.5 L56,47.5 L52,51 L48,49 L44,52.5 L40,50.5 L36,54 Z" fill="url(#lgCap)"/>
+<rect x="68.3" y="31" width="3.4" height="5.5" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="0.4"/>
+<rect x="69.4" y="25" width="1.2" height="6" fill="#FFFFFF"/>
+<rect x="69.4" y="25" width="1.2" height="1.5" fill="#D7261E"/><rect x="69.4" y="28" width="1.2" height="1.5" fill="#D7261E"/>
+<path d="M0,88 C22,79 46,81 70,87 C86,91 98,89 108,85 L108,108 L0,108 Z" fill="#203B22"/><rect x="25" y="52" width="2.4" height="38" rx="1" fill="#2A2A2A"/>
+<g stroke="#1E1E1E" stroke-width="1" stroke-linejoin="round">
+ <polygon points="27,55 43,58.5 27,76" fill="#FFFFFF"/>
+ <polygon points="43,58.5 43,79.5 27,76" fill="#F26A10"/>
+ <polygon points="43,58.5 58,54.5 43,79.5" fill="#E9E9E9"/>
+ <polygon points="58,54.5 58,75 43,79.5" fill="#D2560A"/>
+</g></svg></div>
       <div><h1 tabindex="-1">Shadow CO</h1><p>Course d'orientation connectée</p></div>
     </div>
     <div id="homeWarn"></div>
     <div id="homeExtra"></div>
-    <button class="primary big" id="hJoin">🏃 Rejoindre (code ou QR)</button>
-    <button class="big" id="hOrg">📡 Organiser une course</button>
-    <button class="big" id="hTrain">📍 Suivi d'entraînement</button>
-    <button class="big" id="hLib">📚 Mes parcours&nbsp;<span id="hCount"></span></button>
-    <div class="row"><button id="hCreate">➕ Créer un parcours</button><button id="hImport">📂 Importer un GPX</button></div>
-    <div class="row"><button id="hSettings">⚙ Réglages</button><button id="hHelp">❔ Aide</button></div>
+    <button class="primary big hjoin" id="hJoin">🏃 Rejoindre une course<small>avec le code ou le QR code de l'organisateur</small></button>
+    <div class="tiles">
+      <button type="button" class="tile" id="hLib"><span class="ti" aria-hidden="true">📚</span><b>Mes parcours</b><small id="hCount"></small></button>
+      <button type="button" class="tile" id="hCreate"><span class="ti" aria-hidden="true">➕</span><b>Créer un parcours</b><small>sur le terrain</small></button>
+      <button type="button" class="tile" id="hOrg"><span class="ti" aria-hidden="true">📡</span><b>Organiser une course</b><small>suivi en direct</small></button>
+      <button type="button" class="tile" id="hTrain"><span class="ti" aria-hidden="true">📍</span><b>Suivi d'entraînement</b><small>sans parcours</small></button>
+      <button type="button" class="tile" id="hImport"><span class="ti" aria-hidden="true">📂</span><b>Importer</b><small>un fichier GPX</small></button>
+      <button type="button" class="tile" id="hSettings"><span class="ti" aria-hidden="true">⚙</span><b>Réglages</b><small>carte, sons, validation</small></button>
+    </div>
+    <div class="homefoot">
+      <button type="button" id="hHist">🗂 Historique<small id="hHistN"></small></button>
+      <button type="button" id="hHelp">❔ Aide</button>
+    </div>
     <button id="hInstall" hidden>📲 Installer l'appli sur ce téléphone</button>
     <p class="hint" id="hVersion"></p>
+  </main>
+</section>
+
+<!-- HISTORIQUE -->
+<section id="history" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1">Historique</h1></header>
+  <main>
+    <div class="htabs" role="group" aria-label="Type d'historique"><button type="button" data-ht="org" aria-pressed="true">📡 Organisées<small id="htOrgN"></small></button><button type="button" data-ht="run" aria-pressed="false">🏃 Mes courses<small id="htRunN"></small></button></div>
+    <ul id="histList" class="hlist"></ul>
   </main>
 </section>
 
@@ -134,7 +167,7 @@
 
 <!-- RESULTATS -->
 <section id="results" class="screen">
-  <header class="bar"><button class="back" data-go="home" aria-label="Retour à l'accueil">←</button><h1 tabindex="-1">Résultats</h1></header>
+  <header class="bar"><button class="back" data-go="back" aria-label="Retour">←</button><h1 tabindex="-1">Résultats</h1></header>
   <main>
     <div id="rsHead"></div>
     <div class="bigtime" id="rsTotal"></div>
@@ -192,7 +225,7 @@
 
 <!-- ORGANISER : SUIVI -->
 <section id="org" class="screen">
-  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
+  <header class="bar"><button class="back" data-go="back" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
   <div class="orgbar" id="orgbarLive">
     <span id="orgStatus" class="tag"></span>
     <button type="button" id="orgQR">🔗 Code / QR</button>

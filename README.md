@@ -2,6 +2,7 @@
 
 Application de course d'orientation pour coureurs voyants, avec suivi en direct par l'organisateur.
 
+- **Accueil** : tuiles compactes ; seules les activités en cours (course, suivi, courses organisées actives) restent en haut, le reste est dans **🗂 Historique** (courses organisées passées et courses réalisées).
 - **Création de parcours** sur le terrain : départ, postes, arrivée enregistrés au GPS (position moyennée).
 - **Trois types de course** : ordre imposé, ordre libre (tous les postes, dans l'ordre de son choix) ou score (un maximum de points en temps limité, pénalité par minute de retard, points modifiables par poste).
 - **Course** : carte avec les postes sur le fond choisi (IGN, OpenStreetMap, relief, photo), validation automatique en passant sur le poste, temps par poste, bips d'approche en aide. Comme en vraie course d'orientation, la position du coureur n'est affichée que jusqu'au départ (option en course seul ; en course organisée, l'organisateur décide de l'affichage de la position et de la trace).

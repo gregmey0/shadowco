@@ -936,6 +936,43 @@ ul.chat .sys{text-align:center;color:var(--warn);font-size:.85rem}
 .layerpick{display:flex;flex-direction:column;gap:.5rem}
 .follow .pmsgBtn{min-height:52px}
 #modal{z-index:4000}#toast{z-index:4100}
+/* accueil (1.5) : logo, tuiles, « en cours » en haut, historique en bas */
+.home{justify-content:flex-start;gap:.75rem;padding-top:1.1rem}
+.brand{gap:1.1rem;margin-bottom:.4rem}
+.brand .logo{width:88px;height:88px;border-radius:22px;overflow:hidden;flex:none;box-shadow:0 6px 22px rgba(0,0,0,.65),0 0 0 2px #2a2a2a}
+.brand .logo svg{display:block;width:100%;height:100%}
+.brand h1{font-size:2.2rem;letter-spacing:.01em}
+.brand p{color:var(--muted);font-size:1rem}
+.hjoin{flex-direction:column;gap:.15rem;min-height:78px;font-size:1.25rem;border-radius:18px}
+.hjoin small{font-size:.82rem;opacity:.8}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.tile{flex-direction:column;align-items:flex-start;justify-content:flex-start;text-align:left;gap:.2rem;min-height:92px;padding:.7rem .8rem;border-radius:18px;border:2px solid #2b2b2b;background:linear-gradient(180deg,#171717,#0d0d0d);font-size:1rem}
+.tile .ti{font-size:1.55rem;line-height:1.1;margin-bottom:.15rem}
+.tile b{font-size:1.02rem;line-height:1.2}
+.tile small{color:var(--muted);font-size:.8rem;opacity:1}
+.tile:active,.hitem:active{transform:scale(.98)}
+.tile:hover{border-color:#444}
+.homefoot{display:grid;grid-template-columns:3fr 2fr;gap:.6rem;margin-top:.35rem}
+.homefoot button{min-height:60px;font-size:1.02rem;border-width:2px;border-color:#3a3a3a;border-radius:16px;flex-direction:column;gap:0}
+.homefoot small{color:var(--muted);opacity:1}
+.now{background:#140b00;border:2px solid var(--acc);border-radius:18px;padding:.6rem .6rem .7rem;display:flex;flex-direction:column;gap:.45rem}
+.now h2{display:flex;align-items:center;gap:.5rem;margin:.1rem .2rem .1rem;font-size:1rem}
+.livedot{width:11px;height:11px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 0 rgba(255,59,48,.6);animation:live 1.6s infinite}
+@keyframes live{70%{box-shadow:0 0 0 8px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
+@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
+#homeExtra{display:flex;flex-direction:column;gap:.6rem}
+#homeExtra:empty{display:none}
+.hitem{width:100%;justify-content:flex-start;text-align:left;gap:.7rem;min-height:64px;padding:.5rem .7rem;border-width:2px;border-color:#2e2e2e;border-radius:14px;font-weight:400;background:#0e0e0e}
+.hitem .hi{font-size:1.4rem;flex:none}
+.hitem .ht{flex:1;min-width:0;display:flex;flex-direction:column}
+.hitem .ht b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hitem .ht small{color:var(--muted);font-size:.82rem;opacity:1}
+.hitem .go{font-size:1.6rem;color:var(--muted);flex:none}
+.hlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45rem}
+.htabs{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.4rem}
+.htabs button{min-height:58px;font-size:1rem;border-width:2px;flex-direction:column;gap:0}
+.htabs button[aria-pressed=true]{background:var(--acc);color:#000;border-color:var(--acc)}
+.brand h1:focus{outline:none}
 </style>
 </head>
 <body>
@@ -945,19 +982,52 @@ ul.chat .sys{text-align:center;color:var(--warn);font-size:.85rem}
 <section id="home" class="screen active">
   <main class="home">
     <div class="brand">
-      <svg width="76" height="76" viewBox="0 0 100 100" aria-hidden="true"><rect x="18" y="18" width="72" height="72" rx="6" fill="#3a3a3a"/><rect x="10" y="10" width="72" height="72" rx="6" fill="#fff"/><polygon points="10,10 82,10 82,82" fill="#FF7A00"/><rect x="10" y="10" width="72" height="72" rx="6" fill="none" stroke="#000" stroke-width="3"/></svg>
+      <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" viewBox="12 12 84 84"><defs>
+ <linearGradient id="lgSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173F7A"/><stop offset="0.75" stop-color="#5B9BD5"/><stop offset="1" stop-color="#9CC7EA"/></linearGradient>
+ <linearGradient id="lgSlope" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4E7A45"/><stop offset="1" stop-color="#2C4F2E"/></linearGradient>
+ <linearGradient id="lgCap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.66" stop-color="#F1EEE8"/><stop offset="0.67" stop-color="#CFC9BE"/><stop offset="1" stop-color="#BDB6AA"/></linearGradient>
+</defs>
+<rect width="108" height="108" fill="url(#lgSky)"/>
+<path d="M0,72 C10,66 20,59 30,54 L44,47 L56,41 L66,37 L70,35.5 L74,36.5 L82,40 L92,45 C99,48 104,50 108,51 L108,108 L0,108 Z" fill="url(#lgSlope)"/>
+<path d="M30,54 L44,47 L56,41 L66,37 L70,35.5 L74,36.5 L82,40 L92,45 L89,47 L86,45.5 L83,48 L79,46 L76,49.5 L72,46.5 L68,50 L64,47 L60,50.5 L56,47.5 L52,51 L48,49 L44,52.5 L40,50.5 L36,54 Z" fill="url(#lgCap)"/>
+<rect x="68.3" y="31" width="3.4" height="5.5" fill="#FFFFFF" stroke="#6B6B6B" stroke-width="0.4"/>
+<rect x="69.4" y="25" width="1.2" height="6" fill="#FFFFFF"/>
+<rect x="69.4" y="25" width="1.2" height="1.5" fill="#D7261E"/><rect x="69.4" y="28" width="1.2" height="1.5" fill="#D7261E"/>
+<path d="M0,88 C22,79 46,81 70,87 C86,91 98,89 108,85 L108,108 L0,108 Z" fill="#203B22"/><rect x="25" y="52" width="2.4" height="38" rx="1" fill="#2A2A2A"/>
+<g stroke="#1E1E1E" stroke-width="1" stroke-linejoin="round">
+ <polygon points="27,55 43,58.5 27,76" fill="#FFFFFF"/>
+ <polygon points="43,58.5 43,79.5 27,76" fill="#F26A10"/>
+ <polygon points="43,58.5 58,54.5 43,79.5" fill="#E9E9E9"/>
+ <polygon points="58,54.5 58,75 43,79.5" fill="#D2560A"/>
+</g></svg></div>
       <div><h1 tabindex="-1">Shadow CO</h1><p>Course d'orientation connectée</p></div>
     </div>
     <div id="homeWarn"></div>
     <div id="homeExtra"></div>
-    <button class="primary big" id="hJoin">🏃 Rejoindre (code ou QR)</button>
-    <button class="big" id="hOrg">📡 Organiser une course</button>
-    <button class="big" id="hTrain">📍 Suivi d'entraînement</button>
-    <button class="big" id="hLib">📚 Mes parcours&nbsp;<span id="hCount"></span></button>
-    <div class="row"><button id="hCreate">➕ Créer un parcours</button><button id="hImport">📂 Importer un GPX</button></div>
-    <div class="row"><button id="hSettings">⚙ Réglages</button><button id="hHelp">❔ Aide</button></div>
+    <button class="primary big hjoin" id="hJoin">🏃 Rejoindre une course<small>avec le code ou le QR code de l'organisateur</small></button>
+    <div class="tiles">
+      <button type="button" class="tile" id="hLib"><span class="ti" aria-hidden="true">📚</span><b>Mes parcours</b><small id="hCount"></small></button>
+      <button type="button" class="tile" id="hCreate"><span class="ti" aria-hidden="true">➕</span><b>Créer un parcours</b><small>sur le terrain</small></button>
+      <button type="button" class="tile" id="hOrg"><span class="ti" aria-hidden="true">📡</span><b>Organiser une course</b><small>suivi en direct</small></button>
+      <button type="button" class="tile" id="hTrain"><span class="ti" aria-hidden="true">📍</span><b>Suivi d'entraînement</b><small>sans parcours</small></button>
+      <button type="button" class="tile" id="hImport"><span class="ti" aria-hidden="true">📂</span><b>Importer</b><small>un fichier GPX</small></button>
+      <button type="button" class="tile" id="hSettings"><span class="ti" aria-hidden="true">⚙</span><b>Réglages</b><small>carte, sons, validation</small></button>
+    </div>
+    <div class="homefoot">
+      <button type="button" id="hHist">🗂 Historique<small id="hHistN"></small></button>
+      <button type="button" id="hHelp">❔ Aide</button>
+    </div>
     <button id="hInstall" hidden>📲 Installer l'appli sur ce téléphone</button>
     <p class="hint" id="hVersion"></p>
+  </main>
+</section>
+
+<!-- HISTORIQUE -->
+<section id="history" class="screen">
+  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1">Historique</h1></header>
+  <main>
+    <div class="htabs" role="group" aria-label="Type d'historique"><button type="button" data-ht="org" aria-pressed="true">📡 Organisées<small id="htOrgN"></small></button><button type="button" data-ht="run" aria-pressed="false">🏃 Mes courses<small id="htRunN"></small></button></div>
+    <ul id="histList" class="hlist"></ul>
   </main>
 </section>
 
@@ -1075,7 +1145,7 @@ ul.chat .sys{text-align:center;color:var(--warn);font-size:.85rem}
 
 <!-- RESULTATS -->
 <section id="results" class="screen">
-  <header class="bar"><button class="back" data-go="home" aria-label="Retour à l'accueil">←</button><h1 tabindex="-1">Résultats</h1></header>
+  <header class="bar"><button class="back" data-go="back" aria-label="Retour">←</button><h1 tabindex="-1">Résultats</h1></header>
   <main>
     <div id="rsHead"></div>
     <div class="bigtime" id="rsTotal"></div>
@@ -1133,7 +1203,7 @@ ul.chat .sys{text-align:center;color:var(--warn);font-size:.85rem}
 
 <!-- ORGANISER : SUIVI -->
 <section id="org" class="screen">
-  <header class="bar"><button class="back" data-go="home" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
+  <header class="bar"><button class="back" data-go="back" aria-label="Retour">←</button><h1 tabindex="-1" id="orgTitle">Course</h1><span id="orgNet" class="net">📡</span></header>
   <div class="orgbar" id="orgbarLive">
     <span id="orgStatus" class="tag"></span>
     <button type="button" id="orgQR">🔗 Code / QR</button>
@@ -3545,7 +3615,7 @@ var qrcode = function() {
 </script>
 <script>'use strict';
 (function(){
-const VERSION='1.4.0';
+const VERSION='1.5.0';
 const CAP=window.capacitorExports||null;
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==='function'&&window.Capacitor.isNativePlatform());
 const P=NATIVE&&CAP?{geo:CAP.registerPlugin('BackgroundGeolocation'),tts:CAP.registerPlugin('TextToSpeech'),fs:CAP.registerPlugin('Filesystem'),share:CAP.registerPlugin('Share'),awake:CAP.registerPlugin('KeepAwake'),notif:CAP.registerPlugin('LocalNotifications'),app:CAP.registerPlugin('App')}:{};
@@ -3892,7 +3962,7 @@ async function shareFile(name,text,mime='application/gpx+xml'){
 
 /* ---------------- Navigation ---------------- */
 let current='home';
-const PARENT={create:'home',library:'home',detail:'library',results:'home',help:'home',run:'home',join:'home',orgsetup:'detail',org:'home',settings:'home',follow:'home'};
+const PARENT={create:'home',library:'home',detail:'library',results:'home',help:'home',run:'home',join:'home',orgsetup:'detail',org:'home',settings:'home',follow:'home',history:'home'};
 const leaveHooks={create:()=>Create.close(),org:()=>Org.leave(),join:()=>Join.leave()};
 function show(id){
   if(id===current)return;
@@ -3902,7 +3972,10 @@ function show(id){
   if(id!=='home'&&prev==='home')try{history.pushState({s:id},'')}catch(e){}
   const h=$('#'+id+' h1');if(h)setTimeout(()=>h.focus({preventScroll:true}),30);
   if(id==='home')Home.render();
+  if(id==='history')History.render();
 }
+/* écran précédent (le tableau de bord et les résultats peuvent venir de l'historique) */
+function goParent(){const par=PARENT[current]||'home';if(par==='library')Lib.open();else if(par==='detail'&&Lib.cur)Lib.openDetail(Lib.cur.id);else show(par)}
 window.addEventListener('popstate',()=>{
   if(current==='home')return;
   try{history.pushState({s:current},'')}catch(e){}
@@ -3910,9 +3983,9 @@ window.addEventListener('popstate',()=>{
   if(current==='run'){Run.askQuit();return}
   if(current==='follow'&&Follow.on){toast('Le suivi continue. Pour l\'arrêter : appui long sur « Arrêter le suivi ».');return}
   if(current==='create'){Create.askBack();return}
-  const par=PARENT[current]||'home';if(par==='library')Lib.open();else if(par==='detail'&&Lib.cur)Lib.openDetail(Lib.cur.id);else show('home');
+  goParent();
 });
-document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){const g=b.dataset.go;if(g==='library')Lib.open();else if(g==='detail'&&Lib.cur)Lib.openDetail(Lib.cur.id);else show(g)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){const g=b.dataset.go;if(g==='back')goParent();else if(g==='library')Lib.open();else if(g==='detail'&&Lib.cur)Lib.openDetail(Lib.cur.id);else show(g)}});
 function applySimUI(){$('#simBanner').hidden=!settings.sim;document.body.classList.toggle('sim',!!settings.sim)}
 
 /* Feuille plein écran réutilisable (réglages pendant la course, classement, QR code) */
@@ -3923,24 +3996,47 @@ const Sheet={open:false,onClose:null,
 $$('.sheetClose').forEach(b=>b.onclick=()=>Sheet.hide());
 
 /* ---------------- Accueil ---------------- */
+/* course ou séance organisée encore active (les anciennes restent dans l'historique) */
+const orgOngoing=o=>o.status!=='closed'&&o.status!=='deleted'&&Date.now()-new Date(o.created).getTime()<3*86400000;
+const orgRow=o=>`<button type="button" class="hitem" data-org="${o.code}"><span class="hi" aria-hidden="true">${o.kind==='train'?'📍':'📡'}</span><span class="ht"><b>${esc(o.name)}</b><small>${o.coorg?'👥 co-organisée · ':''}${Org.statusLabel(o.status,o.kind)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</small></span><span class="go" aria-hidden="true">›</span></button>`;
 const Home={deferred:null,
   render(){
-    $('#hCount').textContent=courses.length?'('+courses.length+')':'';
+    PARENT.org='home';PARENT.results='home';
+    $('#hCount').textContent=courses.length?courses.length+' parcours':'aucun pour l\'instant';
     const w=[];
     if(!NATIVE&&!window.isSecureContext)w.push('Le GPS ne fonctionne que si l\'appli est ouverte en <b>https</b>.');
     $('#homeWarn').innerHTML=w.map(x=>`<div class="warnbox">${x}</div>`).join('')+(IOS&&!STANDALONE&&!NATIVE?`<div class="ioshint">📲 Sur iPhone : touche <span class="shr">Partager ⬆︎</span> en bas de Safari, puis « Sur l'écran d'accueil ». Shadow CO s'ouvrira ensuite comme une appli, en plein écran.</div>`:'');
-    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]);
+    const act=store.get(K.active,null),orgs=store.get(K.orgs,[]),fw=store.get(K.follow,null),live=orgs.filter(orgOngoing).reverse();
     let h='';
-    const fw=store.get(K.follow,null);if(fw)h+=`<button class="primary" id="hFollow">📍 Suivi en cours : ${esc(fw.sname||'')}</button>`;
+    if(fw)h+=`<button class="primary" id="hFollow">📍 Suivi en cours : ${esc(fw.sname||'')}</button>`;
     if(act&&(act.status==='waiting'||act.status==='running'))h+=`<button class="primary" id="hResume">⏯ Reprendre ma course : ${esc(act.courseName)}</button>`;
-    if(orgs.length)h+=`<section class="card"><h2>Courses et séances organisées</h2>${orgs.slice(-5).reverse().map(o=>`<button type="button" data-org="${o.code}" style="justify-content:space-between"><span>${o.kind==='train'?'📍':'📡'} ${esc(o.name)}</span><span class="muted">${o.coorg?'👥 ':''}${Org.statusLabel(o.status,o.kind)} · ${new Date(o.created).toLocaleDateString('fr-FR')}</span></button>`).join('')}</section>`;
+    if(live.length)h+=`<section class="now"><h2><span class="livedot" aria-hidden="true"></span>En cours</h2>${live.map(orgRow).join('')}</section>`;
     $('#homeExtra').innerHTML=h;
     const r=$('#hResume');if(r)r.onclick=()=>Run.resumeActive();
     const hf=$('#hFollow');if(hf)hf.onclick=()=>Follow.resume();
+    const nh=orgs.length-live.length+results.length;$('#hHistN').textContent=nh?nh+(nh>1?' éléments':' élément'):'vide';
     $('#hVersion').textContent='Version '+VERSION+(NATIVE?' · application Android':'');
   }
 };
-$('#homeExtra').addEventListener('click',e=>{const b=e.target.closest('[data-org]');if(b)Org.resume(b.dataset.org)});
+$('#homeExtra').addEventListener('click',e=>{const b=e.target.closest('[data-org]');if(b){PARENT.org='home';Org.resume(b.dataset.org)}});
+
+/* ---------------- Historique : courses organisées passées et courses réalisées ---------------- */
+const History={tab:'org',
+  render(){
+    const orgs=store.get(K.orgs,[]).filter(o=>!orgOngoing(o)).reverse(),rs=results.slice().reverse();
+    $('#htOrgN').textContent=orgs.length;$('#htRunN').textContent=rs.length;
+    $$('.htabs [data-ht]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ht===this.tab)));
+    $('#histList').innerHTML=this.tab==='org'
+      ?(orgs.length?orgs.map(o=>`<li>${orgRow(o)}</li>`).join(''):'<li class="hint">Aucune course ou séance terminée. Les courses en cours restent sur l\'accueil.</li>')
+      :(rs.length?rs.map(r=>`<li><button type="button" class="hitem" data-res="${r.id}"><span class="hi" aria-hidden="true">${r.kind==='race'?'📡':'🏃'}</span><span class="ht"><b>${esc(r.courseName)}</b><small>${new Date(r.date).toLocaleDateString('fr-FR')}${r.name?' · '+esc(r.name):''} · ${Results.badge(r)}</small></span><span class="go" aria-hidden="true">›</span></button></li>`).join(''):'<li class="hint">Aucune course réalisée pour l\'instant.</li>');
+  }
+};
+$('.htabs').addEventListener('click',e=>{const b=e.target.closest('[data-ht]');if(b){History.tab=b.dataset.ht;History.render()}});
+$('#histList').addEventListener('click',e=>{
+  const o=e.target.closest('[data-org]');if(o){Org.resume(o.dataset.org);PARENT.org='history';return}
+  const b=e.target.closest('[data-res]');if(b){const r=results.find(x=>x.id===b.dataset.res);if(r){Results.show(r);PARENT.results='history'}}
+});
+$('#hHist').onclick=()=>show('history');
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();Home.deferred=e;$('#hInstall').hidden=false});
 $('#hInstall').onclick=async()=>{if(!Home.deferred)return;Home.deferred.prompt();try{await Home.deferred.userChoice}catch(e){}Home.deferred=null;$('#hInstall').hidden=true};
 $('#hCreate').onclick=()=>Create.begin();
